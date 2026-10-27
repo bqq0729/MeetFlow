@@ -1,0 +1,1716 @@
+<!doctype html>
+<html lang="ko">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<title>Whisper Personal · 나의 기록 작업실</title>
+<script>/* 화면 스크립트 오류 기록 (문제 찾기용) */ window.__errs = []; addEventListener("error", (e) => __errs.push(`${e.message} @${e.lineno}`));</script>
+<style>
+  :root {
+    --bg: #f4f6fb; --card: #ffffff; --line: #e6e8ef; --line2: #d7dbe5;
+    --text: #111827; --sub: #4b5563; --muted: #8a93a3;
+    --primary: #4f46e5; --primary2: #7c3aed; --primary-soft: #eef0ff;
+    --ok: #16a34a; --ok-soft: #e8f7ee; --warn: #d97706; --warn-soft: #fff6e5;
+    --err: #dc2626; --err-soft: #fdecec; --side: #0f172a; --side2: #1e293b;
+    --radius: 14px; --shadow: 0 1px 2px rgba(16,24,40,.05), 0 4px 16px rgba(16,24,40,.06);
+  }
+  * { box-sizing: border-box; }
+  html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text);
+    /* 영문·기호는 Segoe UI가 먼저 그려서 경로의 \ 가 ₩ 로 보이지 않게 한다 */
+    font-family: "Pretendard", "Segoe UI", "Malgun Gothic", "맑은 고딕", sans-serif; font-size: 14px;
+    -webkit-font-smoothing: antialiased; }
+  button, input, select { font: inherit; color: inherit; }
+  .app { display: grid; grid-template-columns: 252px 1fr; height: 100%; }
+
+  /* ---------- 사이드바 ---------- */
+  .side { background: linear-gradient(180deg, var(--side) 0%, #111b33 100%); color: #e5e7eb;
+    display: flex; flex-direction: column; padding: 22px 16px; }
+  .brand { display: flex; align-items: center; gap: 12px; padding: 4px 8px 22px; }
+  .logo { width: 40px; height: 40px; border-radius: 12px; display: grid; place-items: center;
+    background: linear-gradient(135deg, #6366f1, #a855f7); box-shadow: 0 6px 18px rgba(124,58,237,.45); }
+  .brand b { display: block; font-size: 16px; letter-spacing: -.2px; }
+  .brand small { color: #94a3b8; font-size: 12px; }
+  .nav { display: flex; flex-direction: column; gap: 6px; }
+  .nav button { all: unset; cursor: pointer; display: flex; gap: 12px; align-items: center;
+    padding: 12px; border-radius: 12px; color: #cbd5e1; transition: background .15s, color .15s; }
+  .nav button:hover { background: rgba(255,255,255,.06); color: #fff; }
+  .nav button.active { background: rgba(99,102,241,.18); color: #fff; box-shadow: inset 0 0 0 1px rgba(129,140,248,.35); }
+  .nav .num { width: 28px; height: 28px; flex: none; border-radius: 9px; display: grid; place-items: center;
+    background: rgba(255,255,255,.08); font-weight: 700; font-size: 13px; }
+  .nav button.active .num { background: linear-gradient(135deg, #6366f1, #8b5cf6); }
+  .nav b { display: block; font-size: 14px; font-weight: 600; white-space: nowrap; }
+  .nav small { display: block; font-size: 12px; color: #94a3b8; margin-top: 2px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .nav button > div { min-width: 0; flex: 1; }
+  /* 단계 옆 작은 상태 알약: 진행 중이면 %, 끝나면 ✓ (클래스 이름은 실행 패널 .run 과 겹치지 않게 nav-…) */
+  .nav .state { flex: none; display: none; font-size: 11px; font-weight: 800; padding: 3px 8px; border-radius: 999px;
+    font-variant-numeric: tabular-nums; }
+  .nav .state.nav-running { display: inline-block; background: rgba(96,165,250,.18); color: #93c5fd; animation: pulse 1.6s infinite; }
+  .nav .state.nav-done { display: inline-block; background: rgba(74,222,128,.15); color: #86efac; }
+  @keyframes pulse { 50% { opacity: .35; } }
+  .side-foot { margin-top: auto; }
+  .conn { background: rgba(255,255,255,.05); border: 1px solid rgba(255,255,255,.08); border-radius: 14px; padding: 14px; }
+  .conn .row { display: flex; align-items: center; gap: 8px; }
+  .conn .title { font-weight: 600; font-size: 13px; }
+  .conn .detail { color: #94a3b8; font-size: 12px; margin: 6px 0 12px; word-break: break-all; min-height: 16px; }
+  .dot { width: 9px; height: 9px; border-radius: 50%; background: #64748b; flex: none; }
+  .dot.ok { background: #4ade80; box-shadow: 0 0 0 4px rgba(74,222,128,.15); }
+  .dot.bad { background: #f87171; box-shadow: 0 0 0 4px rgba(248,113,113,.15); }
+  .dot.wait { background: #fbbf24; animation: pulse 1.2s infinite; }
+  .conn .btns { display: flex; gap: 6px; }
+  .side-link { all: unset; cursor: pointer; display: flex; align-items: center; gap: 10px; width: 100%; box-sizing: border-box;
+    padding: 11px 14px; margin-bottom: 10px; border-radius: 12px; color: #cbd5e1; font-weight: 600; font-size: 13.5px;
+    border: 1px solid rgba(255,255,255,.08); background: rgba(255,255,255,.03); }
+  .side-link:hover { background: rgba(255,255,255,.07); color: #fff; }
+  .side-link.active { background: rgba(99,102,241,.18); color: #fff; border-color: rgba(129,140,248,.35); }
+  .side-badge { margin-left: auto; min-width: 18px; height: 18px; padding: 0 6px; border-radius: 999px; font-size: 11px;
+    display: none; place-items: center; background: #f59e0b; color: #111827; font-weight: 800; }
+  .side-badge.show { display: grid; }
+  .mcp-list { display: flex; flex-direction: column; gap: 10px; }
+  .mcp-row { display: grid; grid-template-columns: 40px 1fr auto auto; gap: 14px; align-items: center; padding: 12px 14px;
+    border: 1px solid var(--line); border-radius: 12px; background: #fcfcfe; }
+  .mcp-ico { width: 40px; height: 40px; border-radius: 11px; display: grid; place-items: center; font-weight: 800; font-size: 15px; color: #fff; }
+  .mcp-name { font-weight: 700; }
+  .mcp-end { color: var(--muted); font-size: 12px; margin-top: 2px; word-break: break-all; }
+  .mcp-acts { display: flex; gap: 6px; }
+  .btn-side { flex: 1; cursor: pointer; border: 0; border-radius: 9px; padding: 8px 10px; font-size: 12.5px;
+    background: rgba(255,255,255,.1); color: #fff; }
+  .btn-side:hover { background: rgba(255,255,255,.16); }
+
+  /* ---------- 본문 ---------- */
+  main { overflow-x: hidden; overflow-y: auto; padding: 30px 36px 40px; }
+  .page { display: none; max-width: 980px; margin: 0 auto; animation: fade .2s ease; }
+  .page.active { display: block; }
+  @keyframes fade { from { opacity: 0; transform: translateY(4px); } to { opacity: 1; transform: none; } }
+  .page-head { margin-bottom: 20px; }
+  .eyebrow { color: var(--primary); font-weight: 700; font-size: 12px; letter-spacing: .6px; }
+  h1 { font-size: 24px; margin: 6px 0 6px; letter-spacing: -.4px; }
+  .page-head p { margin: 0; color: var(--sub); }
+  .grid2 { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow);
+    padding: 20px 22px; margin-bottom: 16px; }
+  .card-head { display: flex; align-items: center; gap: 10px; margin-bottom: 14px; }
+  .card-head h3 { margin: 0; font-size: 15px; }
+  .card-head .ico { width: 30px; height: 30px; border-radius: 9px; display: grid; place-items: center;
+    background: var(--primary-soft); color: var(--primary); }
+  .card-head .right { margin-left: auto; }
+  .field { display: grid; grid-template-columns: 110px 1fr; align-items: center; gap: 12px; margin: 10px 0; }
+  .field > label { color: var(--sub); font-weight: 600; font-size: 13px; }
+  .help { color: var(--muted); font-size: 12.5px; margin: -2px 0 4px 122px; }
+  .input-row { display: flex; gap: 8px; min-width: 0; }
+  .input { flex: 1; min-width: 0; height: 40px; border: 1px solid var(--line2); border-radius: 10px; padding: 0 12px;
+    background: #fbfcfe; outline: none; transition: border .15s, box-shadow .15s; }
+  .input:focus, select:focus { border-color: var(--primary); box-shadow: 0 0 0 4px rgba(79,70,229,.12); background: #fff; }
+  .input::placeholder { color: #a3aab8; }
+  select { height: 40px; border: 1px solid var(--line2); border-radius: 10px; padding: 0 34px 0 12px; background: #fbfcfe;
+    appearance: none; outline: none; cursor: pointer;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2.5'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+    background-repeat: no-repeat; background-position: right 12px center; }
+  .btn { height: 40px; padding: 0 16px; border-radius: 10px; border: 1px solid var(--line2); background: #fff; cursor: pointer;
+    font-weight: 600; font-size: 13px; white-space: nowrap; display: inline-flex; align-items: center; gap: 6px;
+    transition: background .15s, border .15s, transform .05s; }
+  .btn:hover { background: #f5f6fa; border-color: #c9cfdc; }
+  .btn:active { transform: translateY(1px); }
+  .btn.ghost { border-color: transparent; background: transparent; color: var(--primary); }
+  .btn.ghost:hover { background: var(--primary-soft); }
+  .btn.sm { height: 32px; padding: 0 12px; font-size: 12.5px; }
+  /* 옵션: 같은 너비 칸 격자. 칸마다 위에 이름(ⓘ), 아래에 입력. 넓으면 한 줄, 좁으면 고르게 줄을 바꾼다 */
+  .opts { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 14px 14px; align-items: end; }
+  @media (max-width: 1120px) { .opts { grid-template-columns: repeat(3, minmax(0, 1fr)); } }
+  .opt-cell { display: flex; flex-direction: column; gap: 7px; min-width: 0; }
+  .opt-label { display: flex; align-items: center; gap: 2px; color: var(--sub); font-weight: 600; font-size: 12.5px; white-space: nowrap; }
+  .opt-cell select { width: 100%; }
+  .opt-cell .switch { height: 40px; font-weight: 600; font-size: 13px; color: var(--sub); }
+  .sw-text::after { content: attr(data-off); }
+  .switch input:checked ~ .sw-text::after { content: attr(data-on); color: var(--primary); }
+  .opt { display: flex; align-items: center; gap: 10px; }
+  .opt > span { color: var(--sub); font-weight: 600; font-size: 13px; }
+
+  /* 툴팁: <span class="tip" tabindex="0">i<span class="tip-box">…</span></span> */
+  .tip { position: relative; display: inline-grid; place-items: center; width: 17px; height: 17px; border-radius: 50%;
+    background: #e8eaf2; color: var(--sub); font-size: 11px; font-weight: 800; font-style: normal; cursor: help;
+    margin-left: 4px; outline: none; flex: none; }
+  .tip:hover, .tip:focus { background: var(--primary); color: #fff; }
+  .tip-box { position: absolute; left: 50%; top: calc(100% + 10px); transform: translateX(-50%) translateY(4px); z-index: 40;
+    width: 360px; padding: 14px 16px; border-radius: 12px; background: #111827; color: #e5e7eb; text-align: left;
+    font-size: 12.5px; font-weight: 400; line-height: 1.6; box-shadow: 0 16px 36px rgba(0,0,0,.28);
+    opacity: 0; visibility: hidden; transition: opacity .15s, transform .15s; pointer-events: none; }
+  .tip-box::before { content: ""; position: absolute; left: 50%; top: -6px; margin-left: -6px; border: 6px solid transparent;
+    border-top: 0; border-bottom-color: #111827; }
+  .opt-cell:nth-child(n+4) .tip-box { left: auto; right: -12px; transform: translateY(4px); }
+  .opt-cell:nth-child(n+4) .tip-box::before { left: auto; right: 14px; }
+  .opt-cell:nth-child(n+4) .tip:hover .tip-box, .opt-cell:nth-child(n+4) .tip:focus .tip-box { transform: none; }
+  .tip:hover .tip-box, .tip:focus .tip-box { opacity: 1; visibility: visible; transform: translateX(-50%); }
+  .tip-box b { color: #fff; }
+  .tip-box table { width: 100%; border-collapse: collapse; margin-top: 8px; }
+  .tip-box td, .tip-box th { padding: 4px 6px; border-bottom: 1px solid rgba(255,255,255,.08); font-size: 12px; text-align: left; }
+  .tip-box th { color: #94a3b8; font-weight: 700; background: none; }
+  .tip-box td:first-child { color: #c7d2fe; font-weight: 700; white-space: nowrap; }
+  .tip-box .rec { color: #86efac; font-size: 11px; font-weight: 700; }
+  /* 한 단계 = 카드 하나: 카드 안에서는 구분선으로만 나누고, 실행 영역도 카드 안에 넣는다 */
+  .divider { height: 1px; background: var(--line); margin: 16px -22px; }
+  .card > .run { border: 0; box-shadow: none; border-radius: 0; padding: 18px 0 0; margin-top: 18px; border-top: 1px solid var(--line); }
+  /* 단계가 끝나면 나오는 '다음 단계' 버튼 줄 */
+  .next { display: none; align-items: center; gap: 10px; margin-top: 14px; padding: 14px 16px; border-radius: 12px;
+    background: linear-gradient(135deg, #eef0ff, #f5edff); border: 1px solid #dcd7fb; }
+  .next.show { display: flex; animation: fade .2s ease; }
+  .next .next-text { flex: 1; color: #3730a3; font-weight: 600; font-size: 13.5px; }
+  .next .btn { border-color: #c7c2f5; }
+  .next .btn.go { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .next .btn.go:hover { filter: brightness(1.08); background: var(--primary); }
+  /* ① 끝난 뒤 화자 이름 지정 */
+  .spk { display: none; margin-top: 14px; padding: 14px 16px; border: 1px solid var(--line); border-radius: 12px; background: #fcfcfe; }
+  .spk.show { display: block; animation: fade .2s ease; }
+  .spk-head { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .spk-head b { font-size: 14px; }
+  .spk-head span { color: var(--sub); font-size: 12.5px; flex: 1; }
+  .spk-row { display: grid; grid-template-columns: 74px 180px 1fr; gap: 12px; align-items: center; padding: 8px 0; border-top: 1px solid var(--line); }
+  .spk-tag { font-weight: 700; font-size: 13px; color: #3730a3; background: var(--primary-soft); border-radius: 8px; padding: 5px 8px; text-align: center; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .spk .btn.go { background: var(--primary); color: #fff; border-color: var(--primary); }
+  .spk .btn.go:hover { filter: brightness(1.08); }
+  .spk-row .input { height: 36px; }
+  .spk-said { color: var(--sub); font-size: 12.5px; line-height: 1.5; min-width: 0; }
+  .spk-said div { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .spk-said small { color: var(--muted); }
+  .model-note { margin-top: 12px; padding: 10px 12px; border-radius: 10px; background: var(--primary-soft); color: #3730a3;
+    font-size: 12.5px; display: flex; gap: 8px; align-items: center; }
+
+  /* 스위치 */
+  .switch { display: inline-flex; align-items: center; gap: 10px; cursor: pointer; user-select: none; font-weight: 600; font-size: 13.5px; }
+  .switch input { display: none; }
+  .switch i { width: 40px; height: 23px; border-radius: 999px; background: #d4d8e2; position: relative; transition: background .2s; flex: none; }
+  .switch i::after { content: ""; position: absolute; top: 3px; left: 3px; width: 17px; height: 17px; border-radius: 50%;
+    background: #fff; box-shadow: 0 1px 3px rgba(0,0,0,.25); transition: transform .2s; }
+  .switch input:checked + i { background: linear-gradient(135deg, var(--primary), var(--primary2)); }
+  .switch input:checked + i::after { transform: translateX(17px); }
+
+  /* 형식 칩 */
+  .chips { display: flex; gap: 10px; flex-wrap: wrap; }
+  .chip { cursor: pointer; user-select: none; }
+  .chip input { display: none; }
+  .chip span { display: inline-flex; align-items: center; gap: 8px; padding: 10px 16px; border-radius: 12px;
+    border: 1.5px solid var(--line2); background: #fff; font-weight: 600; transition: all .15s; }
+  .chip span b { font-size: 11px; padding: 2px 6px; border-radius: 6px; background: #eef1f6; color: var(--sub); }
+  .chip input:checked + span { border-color: var(--primary); background: var(--primary-soft); color: var(--primary); }
+  .chip input:checked + span b { background: var(--primary); color: #fff; }
+
+  /* 파일 칩 */
+  .files { display: flex; flex-wrap: wrap; gap: 6px; margin: 2px 0 0 122px; }
+  .files:empty { display: none; }
+  .file-pill { font-size: 12px; padding: 4px 10px; border-radius: 999px; background: #f1f3f8; color: var(--sub); }
+  .tag { display: inline-flex; align-items: center; gap: 6px; font-size: 12px; font-weight: 600; padding: 4px 10px; border-radius: 999px; }
+  .tag.ok { background: var(--ok-soft); color: var(--ok); }
+  .tag.warn { background: var(--warn-soft); color: var(--warn); }
+  .tag.err { background: var(--err-soft); color: var(--err); }
+  .tag.muted { background: #f1f3f8; color: var(--muted); }
+
+  /* 실행 패널 */
+  .run { background: var(--card); border: 1px solid var(--line); border-radius: var(--radius); box-shadow: var(--shadow); padding: 18px 22px; }
+  .run-row { display: flex; gap: 10px; }
+  .btn-primary { flex: 1; height: 50px; border: 0; border-radius: 12px; cursor: pointer; color: #fff; font-weight: 700; font-size: 15px;
+    background: linear-gradient(135deg, var(--primary), var(--primary2)); box-shadow: 0 8px 20px rgba(79,70,229,.28);
+    display: inline-flex; align-items: center; justify-content: center; gap: 10px; transition: filter .15s, transform .05s, box-shadow .15s; }
+  .btn-primary:hover { filter: brightness(1.06); box-shadow: 0 10px 24px rgba(79,70,229,.34); }
+  .btn-primary:active { transform: translateY(1px); }
+  .btn-primary:disabled { filter: grayscale(.4) brightness(1.1); opacity: .7; cursor: default; box-shadow: none; }
+  .btn-stop { width: 110px; height: 50px; border-radius: 12px; border: 1px solid var(--line2); background: #fff; cursor: pointer; font-weight: 700; color: var(--sub); }
+  .btn-stop:not(:disabled):hover { border-color: var(--err); color: var(--err); background: var(--err-soft); }
+  .btn-stop:disabled { opacity: .45; cursor: default; }
+  .progress { height: 10px; border-radius: 999px; background: #edf0f6; overflow: hidden; margin: 16px 0 10px; }
+  .progress > div { height: 100%; width: 0; border-radius: 999px; background: linear-gradient(90deg, #6366f1, #a855f7);
+    transition: width .35s ease; position: relative; }
+  .progress.running > div::after { content: ""; position: absolute; inset: 0;
+    background: linear-gradient(90deg, transparent, rgba(255,255,255,.45), transparent); animation: shine 1.4s infinite; }
+  @keyframes shine { from { transform: translateX(-100%); } to { transform: translateX(100%); } }
+  .status { display: flex; align-items: center; gap: 10px; min-height: 22px; }
+  .status .text { flex: 1; color: var(--sub); }
+  .status .pct { font-variant-numeric: tabular-nums; font-weight: 700; color: var(--primary); }
+  .status.ok .text { color: var(--ok); font-weight: 600; }
+  .status.err .text { color: var(--err); font-weight: 600; }
+  .status.warn .text { color: var(--warn); font-weight: 600; }
+  details.more { margin: 16px -22px 0; border-top: 1px solid var(--line); }
+  details.more summary { cursor: pointer; list-style: none; user-select: none; padding: 14px 22px 0; display: flex; gap: 12px; align-items: baseline;
+    font-size: 13.5px; font-weight: 600; color: var(--text); }
+  details.more summary::-webkit-details-marker { display: none; }
+  details.more summary::before { content: "▸"; color: var(--muted); }
+  details.more[open] summary::before { content: "▾"; }
+  .more-sum { color: var(--muted); font-weight: 400; font-size: 12.5px; }
+  details.more[open] .more-sum { display: none; }
+  .more-body { padding: 12px 22px 0; }
+  details.log { margin-top: 12px; }
+  details.log summary { cursor: pointer; color: var(--muted); font-size: 12.5px; list-style: none; user-select: none; }
+  details.log summary::before { content: "▸ "; }
+  details.log[open] summary::before { content: "▾ "; }
+  .console { margin-top: 8px; background: #0f172a; color: #cbd5e1; border-radius: 12px; padding: 12px 14px; height: 170px; overflow: auto;
+    font-family: "Cascadia Mono", Consolas, "Malgun Gothic", monospace; font-size: 12px; line-height: 1.6; white-space: pre-wrap; }
+  .console .sep { color: #64748b; }
+
+  /* 할 일 표 */
+  .table-wrap { border: 1px solid var(--line); border-radius: 12px; overflow: hidden; margin-top: 12px; }
+  table { width: 100%; border-collapse: collapse; }
+  th { text-align: left; font-size: 12px; color: var(--muted); font-weight: 700; background: #f8f9fc; padding: 10px 10px; border-bottom: 1px solid var(--line); }
+  td { padding: 8px 10px; border-bottom: 1px solid #f0f2f6; vertical-align: middle; }
+  tr:last-child td { border-bottom: 0; }
+  td .input { height: 34px; font-size: 13px; width: 100%; }
+  td.owner { color: var(--muted); font-size: 12.5px; white-space: nowrap; }
+  tr.off td { opacity: .45; }
+  .check { width: 18px; height: 18px; accent-color: var(--primary); cursor: pointer; }
+  .empty { padding: 26px; text-align: center; color: var(--muted); }
+  .doc-summary { display: flex; gap: 10px; align-items: center; flex-wrap: wrap; margin: 4px 0 0 122px; }
+  .doc-summary b { font-size: 14px; }
+  .connectors { display: flex; gap: 8px; align-items: center; flex-wrap: wrap; }
+
+  /* 토스트 · 모달 */
+  #toasts { position: fixed; right: 24px; bottom: 24px; display: flex; flex-direction: column; gap: 10px; z-index: 50; }
+  .toast { min-width: 300px; max-width: 420px; background: #111827; color: #f9fafb; border-radius: 12px; padding: 14px 16px;
+    box-shadow: 0 12px 30px rgba(0,0,0,.25); display: flex; gap: 12px; align-items: flex-start; animation: up .25s ease; }
+  .toast .t-dot { width: 8px; height: 8px; margin-top: 6px; border-radius: 50%; background: #4ade80; flex: none; }
+  .toast.err .t-dot { background: #f87171; }
+  .toast .t-body { flex: 1; font-size: 13px; line-height: 1.5; }
+  .toast .t-body b { display: block; margin-bottom: 2px; }
+  .toast .t-act { color: #a5b4fc; cursor: pointer; font-weight: 700; font-size: 12.5px; margin-top: 6px; display: inline-block; }
+  @keyframes up { from { opacity: 0; transform: translateY(10px); } to { opacity: 1; transform: none; } }
+  .backdrop { position: fixed; inset: 0; background: rgba(15,23,42,.45); backdrop-filter: blur(2px); display: none;
+    align-items: center; justify-content: center; z-index: 60; }
+  .backdrop.show { display: flex; animation: fade .15s; }
+  .modal { width: min(540px, 92vw); background: #fff; border-radius: 18px; box-shadow: 0 30px 60px rgba(0,0,0,.25); overflow: hidden; }
+  .modal .m-body { padding: 24px 26px 8px; }
+  .modal h2 { margin: 0 0 8px; font-size: 18px; }
+  .modal .m-text { color: var(--sub); line-height: 1.65; white-space: pre-wrap; max-height: 52vh; overflow: auto; }
+  .modal .m-foot { display: flex; justify-content: flex-end; gap: 8px; padding: 18px 26px 22px; }
+  .modal .m-foot .btn-primary { flex: none; height: 42px; padding: 0 20px; font-size: 14px; box-shadow: none; }
+  /* 파일 끌어다 놓기 */
+  #dropzone { position: fixed; inset: 0; z-index: 70; display: none; align-items: center; justify-content: center;
+    background: rgba(79,70,229,.10); backdrop-filter: blur(1px); pointer-events: none; }
+  #dropzone.show { display: flex; }
+  #dropzone .dz { border: 3px dashed var(--primary); border-radius: 22px; background: rgba(255,255,255,.92); padding: 34px 48px;
+    text-align: center; box-shadow: 0 20px 50px rgba(79,70,229,.25); }
+  #dropzone .dz b { display: block; font-size: 18px; color: var(--primary); margin-bottom: 6px; }
+  #dropzone .dz span { color: var(--sub); font-size: 13px; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-thumb { background: #cfd5e1; border-radius: 999px; border: 2px solid transparent; background-clip: padding-box; }
+  .console::-webkit-scrollbar-thumb { background: #334155; }
+  /* 통계 */
+  .stat-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 18px; }
+  .stat-tile { background: var(--card); border: 1px solid var(--line); border-radius: 12px; padding: 14px 16px; }
+  .stat-tile small { display: block; color: var(--sub); font-size: 12.5px; font-weight: 600; margin-bottom: 6px; }
+  .stat-tile b { font-size: 22px; font-variant-numeric: tabular-nums; }
+  .stat-tile span { display: block; color: var(--muted); font-size: 12px; margin-top: 4px; }
+  .stat-table-wrap { overflow-x: auto; }
+  .stat-table { width: 100%; border-collapse: collapse; font-size: 13px; font-variant-numeric: tabular-nums; }
+  .stat-table th { text-align: left; color: var(--sub); font-weight: 600; padding: 8px 10px; border-bottom: 1px solid var(--line2); white-space: nowrap; }
+  .stat-table td { padding: 8px 10px; border-bottom: 1px solid var(--line); vertical-align: top; }
+  .stat-table td.num, .stat-table th.num { text-align: right; white-space: nowrap; }
+  .stat-table .sub { color: var(--muted); font-size: 12px; }
+  .stat-table .bad { color: #c2410c; }
+</style>
+<link rel="stylesheet" href="dashboard.css?v=personal-10">
+<link rel="stylesheet" href="readability.css?v=2">
+<link rel="stylesheet" href="design-system.css?v=4">
+</head>
+<body>
+<div class="app">
+  <aside class="side">
+    <div class="brand">
+      <div class="logo">
+        <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.2" stroke-linecap="round"><path d="M14 3H5v18h14V8zM14 3v5h5"/><path d="M8 14v3m4-6v6m4-3v3"/></svg>
+      </div>
+      <div><b>Whisper.</b><small>PERSONAL STUDIO</small></div>
+    </div>
+    
+    <p class="nav-label">MY WORKSPACE</p>
+    <nav class="nav" aria-label="주요 메뉴">
+      <button data-page="guide" class="active" aria-current="page"><span class="num"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="m3 10 9-7 9 7v10H3z"/><path d="M9 20v-7h6v7"/></svg></span><div><b>나의 작업실</b><small>사용 전 확인해 주세요</small></div></button>
+      <button data-page="make" data-personal-mode="transcript"><span class="num"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H5v18h14V8zM14 3v5h5"/><path d="M8 14v3m4-6v6m4-3v3"/></svg></span><div><b>음성 변환</b><small>저장된 음성·영상을 텍스트로</small></div><span class="state" id="st-t"></span></button>
+      <button data-page="make" data-personal-mode="minutes"><span class="num"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H5v18h14V8zM14 3v5h5M8 12h8M8 16h5"/></svg></span><div><b>문서 만들기</b><small>대본에서 핵심을 정리해요</small></div></button>
+      <button data-page="publish"><span class="num"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="7" height="9" rx="2"/><rect x="14" y="4" width="7" height="9" rx="2"/><path d="M6 7V4h5M18 17v3h-5"/></svg></span><div><b>업무 연동</b><small>문서 업무 연동 생성</small></div><span class="state" id="st-p"></span></button>
+    </nav>
+    <div class="side-foot">
+      <button class="side-link" id="nav-compare" data-page="compare"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" aria-hidden="true"><path d="M4 20h16M7 16V8M12 16V4M17 16V11"/></svg>비교분석</button>
+      <button class="side-link" id="nav-stats" data-page="stats">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M5 20V11M12 20V5M19 20v-6"/></svg>
+        활동과 사용량</button>
+      <button class="side-link" id="nav-connections" data-page="connections">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 7H7a5 5 0 0 0 0 10h2M15 7h2a5 5 0 0 1 0 10h-2M8 12h8"/></svg>
+        연결 관리<span class="side-badge" id="conn-badge"></span></button>
+      <button class="ai-summary" onclick="go('connections')"><span class="ai-summary-icon" aria-hidden="true">✧</span><span><b>AI 도구 연결</b><small id="ai-side-state">Claude Code · Codex</small></span><span aria-hidden="true">↗</span></button>
+    </div>
+    <div class="side-signature">A SPACE TO THINK, AND KEEP.</div>
+  </aside>
+
+  <main>
+
+    <header class="workspace-bar"><div class="workspace-breadcrumb"><span>Whisper Personal</span><span aria-hidden="true">/</span><strong id="workspace-current">나의 작업실</strong></div><div class="workspace-tools"><span id="workspace-context" class="context-status">대본 → 문서 → 공유</span><button class="context-help" id="workspace-help-toggle" aria-controls="workspace-help" aria-expanded="false"><span aria-hidden="true">?</span> 사용 안내</button></div></header>
+    <aside id="workspace-help" class="workspace-help" hidden><b>지금 화면에서는</b><p id="workspace-help-text"></p></aside>
+    <section class="page active" id="page-guide" aria-labelledby="guide-title">
+      <div class="home-heading"><div><span class="eyebrow">YOUR PERSONAL WORKSPACE</span><h1 id="guide-title">음성 파일을 텍스트로.</h1><p>외부에서 녹음한 음성·영상 파일을 올려 텍스트와 문서로 정리하세요.</p></div><time class="home-date" id="home-date"></time></div>
+      <div class="studio-hero">
+        <div class="hero-copy"><span class="hero-kicker">FROM AUDIO FILE TO TEXT</span><h2>저장된 음성 파일을,<br>읽을 수 있는 기록으로.</h2><p>휴대폰이나 다른 프로그램에서 녹음한 파일을 올려주세요.<br>이 페이지는 녹음 없이, 파일을 텍스트로 변환합니다.</p><div class="hero-actions"><button class="hero-start" onclick="personalMode('transcript')">음성 변환 <span aria-hidden="true">↗</span></button><button class="text-action" onclick="go('connections')">연결 설정하기 →</button></div></div>
+        <div class="hero-art" aria-hidden="true"><span class="art-label">A LITTLE SPACE FOR YOUR IDEAS</span><div class="sound-card"><div class="sound-top">AUDIO FILE <span>↑ UPLOAD</span></div><div class="waveform"><i style="height:13px"></i><i style="height:23px"></i><i style="height:35px"></i><i style="height:26px"></i><i style="height:42px"></i><i style="height:56px"></i><i style="height:34px"></i><i style="height:20px"></i><i style="height:44px"></i><i style="height:62px"></i><i style="height:48px"></i><i style="height:32px"></i><i style="height:51px"></i><i style="height:37px"></i><i style="height:24px"></i><i style="height:43px"></i><i style="height:29px"></i><i style="height:17px"></i><i style="height:31px"></i><i style="height:45px"></i><i style="height:23px"></i><i style="height:14px"></i><i style="height:26px"></i><i style="height:18px"></i></div><div class="sound-bottom"><span class="sound-play">↑</span><span>AUDIO FILE → TEXT</span><span>↗</span></div></div><div class="note-card"><b>당신의 다음 아이디어.</b><div class="note-lines"><i></i><i></i><i></i></div></div></div>
+      </div>
+      <div class="section-label"><h2>어떤 작업을 시작할까요?</h2><span>MAKE ROOM FOR WHAT MATTERS</span></div>
+      <div class="tool-grid">
+        <button class="tool-card" onclick="personalMode('transcript')"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H5v18h14V8zM14 3v5h5"/><path d="M8 14v3m4-6v6m4-3v3"/></svg></span><small>01 / CREATE</small><h3>음성 파일을 텍스트로</h3><p>저장된 음성·영상 파일을 올려<br>대본과 화자별 발언을 확인하세요.</p><span class="tool-link">음성 변환 <span aria-hidden="true">↗</span></span></button>
+        <button class="tool-card" onclick="personalMode('minutes')"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><rect x="3" y="11" width="7" height="9" rx="2"/><rect x="14" y="4" width="7" height="9" rx="2"/><path d="M6 7V4h5M18 17v3h-5"/></svg></span><small>02 / MINUTES</small><h3>대본을 필요한 문서로</h3><p>대화의 핵심과 할 일을 정리해<br>한글·워드·PDF로 저장하세요.</p><span class="tool-link">문서 만들기 <span aria-hidden="true">↗</span></span></button>
+        <button class="tool-card" onclick="go('stats')"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M4 20h17M7 16v-5M12 16V4M17 16V8"/></svg></span><small>03 / REFLECT</small><h3>나의 작업 돌아보기</h3><p>작업 시간과 사용량을 살피며<br>나에게 맞는 흐름을 찾아보세요.</p><span class="tool-link">활동과 사용량 <span aria-hidden="true">↗</span></span></button>
+      </div>
+      <div class="home-bottom"><div class="journey"><h2>준비한 파일에서 문서까지</h2><div class="flow-illustration" role="img" aria-label="외부에서 준비한 음성 파일을 업로드해 텍스트와 문서로 변환하고, 검토 후 연결된 도구로 전달하는 흐름"><div class="flow-node audio-node"><span class="flow-glyph"><i></i><i></i><i></i><i></i><i></i></span><b>파일 업로드</b><small>외부에서 준비</small></div><span class="flow-wire"><i></i></span><div class="flow-node transcript-node"><span class="flow-glyph paper-glyph"><i></i><i></i><i></i></span><b>텍스트</b><small>내용을 확인</small></div><span class="flow-wire wire-two"><i></i></span><div class="flow-node document-node"><span class="flow-glyph paper-glyph"><i></i><i></i><i></i><em>✓</em></span><b>문서</b><small>핵심을 정리해</small></div><span class="flow-wire wire-three"><i></i></span><div class="flow-node service-node"><span class="service-miniatures"><i>C</i><i>J</i><i>S</i><i>G</i></span><b>연결된 도구</b><small>확인 후 공유</small></div></div><div class="flow-caption">Confluence · Jira · Slack · GitLab <span>공유 전 내용을 확인하세요.</span></div></div><div class="workspace-note checklist-note"><div class="note-heading"><span aria-hidden="true">✓</span><h2>정확한 기록을 위한 3가지</h2></div><ul><li><i aria-hidden="true">01</i><span>외부에서 녹음한 파일 준비하기</span></li><li><i aria-hidden="true">02</i><span>이름·결정·담당자 확인하기</span></li><li><i aria-hidden="true">03</i><span>공유할 내용 한 번 더 검토하기</span></li></ul><div class="note-bottom"><small>AI 정리 시 대본이 선택한 서비스로 전달됩니다.</small><button onclick="go('connections')">AI 연결 설정 ↗</button></div></div></div>
+      <footer class="home-footer"><span>WHISPER PERSONAL / A SPACE TO THINK</span><span>목소리에서 시작되는 나의 기록.</span></footer>
+    </section>
+
+
+    <!-- ① 회의록 만들기: 녹음 → 받아쓰기 → 화자 이름 → 회의록 (대본 .txt를 넣으면 바로 회의록) -->
+    <section class="page" id="page-make">
+      <div class="page-head editor-heading"><div><span class="eyebrow">CREATE A NEW NOTE</span><h1>새로운 기록을 시작해요.</h1>
+        <p>녹음·영상·대본을 넣고, 나에게 필요한 문서로 정리하세요.</p></div><span class="editor-index">01 / CREATE</span></div>
+      <div class="mode-tabs" role="group" aria-label="작업 종류"><button class="mode-tab active" data-personal-mode="transcript" aria-pressed="true"><span>01</span> 음성 변환 <small>음성 파일 → 텍스트</small></button><button class="mode-tab" data-personal-mode="minutes" aria-pressed="false"><span>02</span> 문서 만들기 <small>대본 → 문서</small></button></div>
+      <div class="make-workspace">
+      <div class="card">
+        <div class="upload-banner"><span class="tool-icon"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M14 3H5v18h14V8zM14 3v5h5"/><path d="M8 14v3m4-6v6m4-3v3"/></svg></span><div><h2>어떤 이야기를 기록할까요?</h2><p>녹음 파일을 선택하거나 화면에 끌어다 놓으세요.</p></div><span>AUDIO → DOCUMENT</span></div>
+        <div class="field"><label for="t-files">음성 파일 · 대본</label><div class="input-row"><input class="input" id="t-files" placeholder="녹음·영상 또는 대본(.txt)을 고르거나 이 창에 끌어다 놓으세요"><button class="btn" data-pick="media" data-target="t-files">찾아보기</button></div></div>
+        <div class="files" id="t-file-pills"></div>
+        <div class="field"><label for="t-out">저장 폴더</label><div class="input-row"><input class="input" id="t-out" readonly></div></div>
+        <div class="field minutes-document-field" hidden><label for="document-type">문서 종류</label><div><select id="document-type" style="width:100%"><option value="minutes">회의록</option><option value="interview">인터뷰 정리</option><option value="lecture">강의·세미나 노트</option><option value="report">업무 보고서</option><option value="summary">핵심 요약</option><option value="custom">자유 형식</option></select><p id="document-type-hint" class="field-hint"></p></div></div>
+        <div class="field minutes-document-field" hidden><label for="m-engine">AI 도구</label><div><div class="engine-select-row"><select id="m-engine"><option value="claude">Claude Code</option><option value="codex">Codex · OpenAI</option></select><span class="engine-state" id="selected-engine-state">연결 확인 중</span><button class="btn sm" onclick="go('connections')" type="button">연결 관리 ↗</button></div></div></div>
+        <div class="field"><label>만들 형식</label>
+          <div style="display:flex;align-items:center;gap:18px;flex-wrap:wrap">
+            <div class="chips">
+              <label class="chip"><input type="checkbox" value="pdf"><span><b>PDF</b>PDF</span></label>
+              <label class="chip"><input type="checkbox" value="hwpx"><span><b>HWPX</b>한글</span></label>
+              <label class="chip"><input type="checkbox" value="docx"><span><b>DOCX</b>워드</span></label>
+              <label class="chip"><input type="checkbox" value="md"><span><b>MD</b>마크다운</span></label>
+            </div>
+          </div></div>
+        <details class="more" id="t-more"><summary><span class="settings-icon" aria-hidden="true"><svg width="19" height="19" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.7" stroke-linecap="round"><path d="M4 7h16M4 17h16"/><circle cx="9" cy="7" r="3" fill="currentColor" stroke="none"/><circle cx="15" cy="17" r="3" fill="currentColor" stroke="none"/></svg></span><span class="settings-caption"><b>자세한 설정</b><small>인식 옵션 · 문서 정보</small></span><span class="more-sum" id="t-more-sum"></span><span class="settings-chevron" aria-hidden="true"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round"><path d="m6 9 6 6 6-6"/></svg></span></summary>
+          <div class="more-body">
+          <div class="field template-field"><label for="m-template">문서 양식</label><div class="input-row"><input class="input" id="m-template" placeholder="비우면 회사 기본 양식"><button class="btn ghost" id="m-template-clear" title="양식 지우기 (기본 양식으로)" style="display:none;padding:0 12px">✕</button><button class="btn" data-pick="template" data-target="m-template">찾아보기</button></div></div>
+          <div class="opts">
+            <div class="opt-cell"><div class="opt-label">언어<span class="tip" tabindex="0">i<span class="tip-box">
+              <b>말하는 언어</b><br>회의에서 쓰는 언어를 고르면 그 언어로만 받아 적어서 더 정확해요.<br>
+              <b>자동 감지</b>는 처음 30초를 듣고 언어를 정해요. 한국어 회의라면 <b>한국어</b>로 두는 게 가장 좋아요.</span></span></div>
+              <select id="t-lang"></select></div>
+            <div class="opt-cell"><div class="opt-label">품질<span class="tip" tabindex="0">i<span class="tip-box"><b>인식 품질 선택</b><p>보통은 <b>추천</b>으로 충분해요. 정확도가 아쉽다면 <b>최고 품질</b>, 속도나 메모리가 중요하면 <b>보통·빠름</b>을 선택하세요.</p><small>처음 선택한 모델은 한 번 내려받습니다.</small></span></span></div>
+              <select id="t-model"><option value="large-v3-turbo">추천</option><option value="large-v3">최고 품질</option><option value="medium">보통</option><option value="small">빠름</option><option value="base">가장 빠름</option></select></div>
+            <div class="opt-cell"><div class="opt-label">인원<span class="tip" tabindex="0">i<span class="tip-box">
+              <b>회의 참석 인원</b><br><b>자동</b>은 목소리를 듣고 인원을 추정해요. 배경음악·웃음소리가 많으면 실제보다 많게 잡힐 수 있어요.<br>
+              몇 명인지 알면 숫자로 고르는 게 훨씬 정확해요.</span></span></div>
+              <select id="t-speakers"><option>자동</option><option>2</option><option>3</option><option>4</option><option>5</option><option>6</option></select></div>
+            <div class="opt-cell"><div class="opt-label">화자 구분<span class="tip" tabindex="0">i<span class="tip-box">
+              <b>누가 말했는지 나누기</b><br>목소리 특징으로 사람을 구분해서 "화자1: …", "화자2: …"처럼 적어요. 받아쓰기가 끝나면 실제 이름을 적을 수 있어요.<br>
+              CPU로 계산해서 시간이 더 걸려요 (4분 회의에 약 1분). 혼자 말하는 녹음이면 꺼도 돼요.</span></span></div>
+              <label class="switch"><input type="checkbox" id="t-diarize"><i></i><span class="sw-text" data-on="사용" data-off="안 함"></span></label></div>
+            <div class="opt-cell"><div class="opt-label">만들 것<span class="tip" tabindex="0">i<span class="tip-box">
+              <b>대본 + 회의록</b>: 받아쓰기가 끝나면 이어서 Claude가 회의록을 써요.<br>
+              <b>대본만</b>: 받아쓰기(.txt · .srt)만 하고 멈춰요. 회의록은 나중에 대본을 다시 넣어 만들 수 있어요.</span></span></div>
+              <label class="switch"><input type="checkbox" id="m-on"><i></i><span class="sw-text" data-on="대본 + 회의록" data-off="대본만"></span></label></div>
+          </div>
+          <div class="model-note" id="t-model-note"></div>
+          <div class="document-fields"><div class="field"><label for="m-title">문서 제목 <span class="optional-label">선택</span></label><input class="input" id="m-title" placeholder="비우면 AI가 내용에 맞게 정합니다"></div>
+          <div class="field"><label for="m-date">기준 일시 <span class="optional-label">선택</span></label><input class="input" id="m-date" placeholder="비우면 오늘 날짜를 사용합니다"></div>
+          <div class="field" id="claude-model-field"><label for="m-model">Claude 모델 <span class="optional-label">선택</span></label>
+            <select id="m-model">
+              <option value="">추천 (기본값)</option>
+              <option value="opus">Opus · 가장 정확, 느림</option>
+              <option value="sonnet">Sonnet · 빠르고 정확한 균형</option>
+              <option value="haiku">Haiku · 가장 빠름, 간단한 회의용</option>
+            </select></div>
+          <div class="field" id="codex-model-field" hidden><label for="m-codex-model">Codex 모델 <span class="optional-label">선택</span></label><input class="input" id="m-codex-model" placeholder="비우면 Codex 기본 모델"></div>
+          <div class="field"><label for="document-instructions">추가 요청 <span class="optional-label">선택</span></label><textarea class="input" id="document-instructions" rows="2" placeholder="예: 핵심부터 짧게, 할 일은 표로 정리해 주세요."></textarea></div>
+          <div class="field template-field"><label for="m-glossary">참고 용어집<span class="tip" tabindex="0">i<span class="tip-box">
+              <b>참고 용어집</b><br>자주 틀리게 받아적히거나 헷갈리는 전문용어·줄임말·이름을 적어 두면, 회의록을 만들 때 Claude가 그 표기를 참고해서 바로잡아요.<br>
+              한 줄에 하나씩, <b>"용어 = 뜻(또는 바른 표기)"</b> 형식으로 적은 텍스트 파일(.txt·.md·.csv)을 올리세요.<br>
+              예) ARR = 연간 반복 매출<br>예) QBR = 분기 사업 리뷰 (자주 "QBR"이 "QDR"로 잘못 받아적힘)</span></span> <span class="optional-label">선택</span></label>
+            <div class="input-row">
+              <input class="input" id="m-glossary" placeholder="용어집 파일을 고르세요 (.txt·.md·.csv)">
+              <button class="btn" data-pick="glossary" data-target="m-glossary">찾아보기</button>
+            </div></div>
+          </div>
+          </div></details>
+      <div class="run" id="run-t">
+        <div class="run-row"><button class="btn-primary" id="t-run">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M12 3l1.8 4.6L18 9l-4.2 1.4L12 15l-1.8-4.6L6 9l4.2-1.4zM19 15l.9 2.1L22 18l-2.1.9L19 21l-.9-2.1L16 18l2.1-.9z"/></svg><span id="t-run-label">대본 및 회의록 만들기</span></button>
+          <button class="btn-stop" id="t-stop" disabled>중지</button>
+          <button class="btn ghost" id="t-reset" type="button" title="지금 선택·진행된 내용을 지우고 처음부터 다시">리셋</button></div>
+        <div class="progress" id="t-bar"><div></div></div>
+        <div class="status" id="t-status"><span class="text">저장된 음성·영상 파일을 업로드해 주세요.</span><span class="pct"></span></div>
+        <div class="spk" id="t-spk"></div>
+        <div class="next" id="t-next"></div>
+        <details class="log"><summary>진행 기록 보기</summary><div class="console" id="t-log"></div></details>
+      </div>
+      </div>
+        <details class="work-guide" id="work-guide" open><summary id="work-guide-title">파일 변환 안내</summary><div class="work-guide-body"><p class="work-guide-intro" id="work-guide-intro">녹음은 휴대폰이나 다른 프로그램에서 따로 진행하세요.</p><ol><li><span>1</span><div><b id="work-step-1">저장된 파일 업로드</b><small id="work-step-note-1">음성·영상 파일을 선택합니다.</small></div></li><li><span>2</span><div><b id="work-step-2">변환 옵션 확인</b><small id="work-step-note-2">언어·품질·화자 구분을 설정합니다.</small></div></li><li><span>3</span><div><b id="work-step-3">텍스트로 변환</b><small id="work-step-note-3">결과를 확인하고 파일로 저장합니다.</small></div></li></ol><div class="work-guide-output"><b>완료 후 받을 파일</b><p id="work-guide-output">대본 .txt · 자막 .srt</p></div><p class="work-guide-note" id="work-guide-note">음성 변환은 AI 계정 연결 없이 사용할 수 있습니다.</p></div></details>
+      </div>
+    </section>
+
+    <!-- ② 공유하기 -->
+    <section class="page" id="page-publish">
+      <div class="page-head"><span class="eyebrow">KEEP THE MOMENTUM</span><h1>기록, 그 다음의 일.</h1><p>완성된 문서를 공유하고 다음 행동으로 이어가세요.</p></div>
+      <div class="engine-share-note" id="codex-sharing-note" hidden><span aria-hidden="true">↗</span><div><b>업무 연동은 현재 Claude Code로 사용할 수 있어요.</b><p>Codex는 문서 정리에 사용할 수 있습니다. 외부 도구로 전달하려면 연결 관리에서 AI 도구를 Claude Code로 전환하세요.</p></div><button class="btn sm" onclick="go('connections')">연결 관리</button></div>
+      <div class="card">
+        <div class="card-head"><div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2"><path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><path d="M14 3v6h6"/></svg></div><h3>회의록</h3>
+          <div class="right connectors" id="conn-tags"><span class="tag muted">커넥터 확인 중…</span></div></div>
+        <div class="field"><label>회의 종류</label><div class="input-row">
+          <select id="p-preset" style="flex:1"></select>
+          <button class="btn" id="p-preset-save" title="지금 아래 설정을 이 회의 종류에 저장">저장</button>
+          <button class="btn" id="p-preset-new">새 종류로 저장</button>
+          <button class="btn ghost" id="p-preset-del">삭제</button></div></div>
+        <div class="help">저장한 공유 설정을 불러옵니다. 연결된 도구에만 적용됩니다.</div>
+        <div class="field"><label>회의록 파일</label><div class="input-row"><input class="input" id="p-doc" placeholder="① 회의록을 만들면 자동으로 들어와요 · PDF · 워드 · 한글 회의록도 가능"><button class="btn" data-pick="doc" data-target="p-doc">찾아보기</button></div></div>
+        <div class="doc-summary" id="p-summary"></div>
+        <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+          <span class="help" id="targets-info" style="margin:0 auto 0 0;align-self:center"></span>
+          <button class="btn sm" id="targets-load">대상 목록 불러오기</button>
+        </div>
+      </div>
+      <div class="sharing-heading"><div><h2>공유할 도구</h2><p id="sharing-caption" role="status">연결 상태를 확인하고 있습니다.</p></div><div class="sharing-actions"><button class="btn sm" id="share-refresh">↻ 연결 확인</button><button class="btn sm ghost" id="share-manage">연결 관리 ↗</button></div></div>
+      <div class="share-empty" id="share-empty" role="status"><span class="empty-service-icon" aria-hidden="true">↗</span><b>연결 상태를 확인하고 있습니다.</b><p>연결된 도구의 설정 카드가 여기에 표시됩니다.</p></div>
+      <div class="service-grid">
+        <div class="card service-card" data-service="confluence" hidden>
+          <div class="card-head"><div class="ico" style="background:#e8f0ff;color:#1d4ed8">C</div><div class="service-name"><h3>Confluence</h3><p>회의록을 페이지로 공유</p></div><span class="service-connection">연결됨</span><label class="switch right"><input type="checkbox" id="p-conf-on" aria-label="Confluence에 공유"><i></i></label></div>
+          <div class="field" style="grid-template-columns:86px 1fr"><label>스페이스 키</label><input class="input" id="p-space" list="dl-spaces" placeholder="목록에서 고르거나 키 입력"></div>
+          <div class="field" style="grid-template-columns:86px 1fr"><label>상위 페이지</label><input class="input" id="p-parent" placeholder="선택 · 페이지 제목"></div>
+        </div>
+        <div class="card service-card" data-service="slack" hidden>
+          <div class="card-head"><div class="ico" style="background:#f6e8ff;color:#7e22ce">S</div><div class="service-name"><h3>Slack</h3><p>팀 채널에 처리 결과 공지</p></div><span class="service-connection">연결됨</span><label class="switch right"><input type="checkbox" id="p-slack-on" aria-label="Slack에 공유"><i></i></label></div>
+          <div class="field" style="grid-template-columns:86px 1fr"><label>채널</label><input class="input" id="p-channel" list="dl-channels" placeholder="예: #회의록-공유"></div>
+          <div class="field" style="grid-template-columns:86px 1fr;align-items:start"><label style="padding-top:10px">안내 문구</label>
+            <textarea class="input" id="p-slack-msg" rows="2" style="height:auto;padding:9px 12px;resize:vertical;font:inherit"></textarea></div>
+          <div class="help" style="margin-left:98px">제목·안내 문구·관련 링크를 채널에 보냅니다.</div>
+        </div>
+      <div class="card service-card" data-service="jira" hidden>
+        <div class="card-head"><div class="ico" style="background:#e6f4ff;color:#0369a1">J</div><div class="service-name"><h3>Jira</h3><p>선택한 일감을 프로젝트에 등록</p></div><span class="service-connection">연결됨</span>
+          <label class="switch right"><input type="checkbox" id="p-jira-on" aria-label="Jira에 공유"><i></i></label></div>
+          <div class="field"><label for="p-project">프로젝트</label><input class="input" id="p-project" list="dl-projects" placeholder="기본 프로젝트"></div>
+          <div class="field"><label for="p-type">일감 유형</label><select id="p-type"><option>작업</option><option>Task</option><option>스토리</option><option>버그</option><option>하위 작업</option></select></div>
+      </div>
+      <div class="card service-card" data-service="gitlab" hidden>
+        <div class="card-head"><div class="ico" style="background:#fff1e8;color:#e24329"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12 21-9-7 3-10 3 7h6l3-7 3 10z"/></svg></div>
+          <div class="service-name"><h3>GitLab</h3><p>후속 업무를 이슈로 생성</p></div><span id="p-gl-tag" style="margin-left:8px"></span>
+          <label class="switch right"><input type="checkbox" id="p-gl-on" aria-label="GitLab에 공유"><i></i></label></div>
+        <div class="field" style="grid-template-columns:86px 1fr"><label>저장소</label><input class="input" id="p-gl-repo" placeholder="http://서버/그룹/프로젝트.git"></div>
+        <div class="field" style="grid-template-columns:86px 1fr"><label>라벨</label><input class="input" id="p-gl-labels" placeholder="쉼표로 구분 · 예: jira, 회의"></div>
+        <div class="help" style="margin-left:98px">Jira와 함께 쓰면 등록된 일감을 이슈로 연결합니다. GitLab만 선택해도 아래 일감을 이슈로 만들 수 있습니다.</div>
+      </div>
+      </div>
+      <div class="card task-editor" data-service="tasks" hidden><div class="card-head"><div class="ico">✓</div><h3>공유할 일감</h3></div>
+        <div class="table-wrap"><table>
+          <thead><tr><th style="width:36px"><input type="checkbox" class="check" id="p-all" checked></th><th>할 일</th><th style="width:116px">프로젝트</th><th style="width:150px">담당자</th><th style="width:150px">기한</th><th style="width:100px">회의록상</th></tr></thead>
+          <tbody id="p-items"><tr class="empty-row"><td colspan="6" class="empty">회의록을 불러오면 할 일 목록이 여기에 나와요. 체크한 것만 일감으로 올라가요.</td></tr></tbody>
+        </table></div>
+        <div style="display:flex;justify-content:space-between;align-items:center;margin-top:10px">
+          <span class="help" style="margin:0">회의 뒤에 따로 정한 일도 직접 추가할 수 있어요.</span>
+          <button class="btn sm" id="p-add">+ 할 일 추가</button></div>
+      </div>
+      <div class="run" id="run-p">
+        <div class="run-row"><button class="btn-primary" id="p-run">
+          <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.4" stroke-linecap="round"><path d="M22 2 11 13M22 2l-7 20-4-9-9-4z"/></svg>공유하기</button>
+          <button class="btn-stop" id="p-stop" disabled>중지</button></div>
+        <div class="progress" id="p-bar"><div></div></div>
+        <div class="status" id="p-status"><span class="text">회의록을 불러오고, 올릴 곳을 켠 뒤 공유하세요.</span><span class="pct"></span></div>
+        <details class="log"><summary>진행 기록 보기</summary><div class="console" id="p-log"></div></details>
+      </div>
+    </section>
+
+    <!-- 통계 -->
+    <section class="page" id="page-compare"><div class="page-head"><span class="eyebrow">OBSERVE, COMPARE, LEARN</span><h1>비교분석</h1><p>같은 목소리도 도구와 녹음 환경에 따라 어떻게 달라지는지 살펴봅니다.</p></div><div class="comparison-intro"><span class="comparison-mark">≋</span><div><b>직접 사용하며 남긴 관찰 기록</b><p>기존 소개 화면의 개인 테스트 기록을 옮겼습니다. 정답 원문 기준의 오류율을 측정한 성능 순위는 아닙니다.</p></div></div><div class="comparison-tabs" role="group" aria-label="비교 종류"><button class="active" data-compare="0" aria-pressed="true">동일 음성 · 다른 도구</button><button data-compare="1" aria-pressed="false">동일 회의 · 다른 녹음</button><button data-compare="2" aria-pressed="false">기타 비교</button><button data-compare="3" aria-pressed="false">비용과 장단점</button></div><div class="card comparison-card"><section class="comparison-panel active" id="compare-panel-0">
+        <h2>같은 음성 파일로 도구별 결과 비교</h2><p>하나의 원본 음성을 클로바노트™·CLOVA Speech와 이 프로그램에 넣어 받아쓰기와 화자 구분 결과를 비교했습니다.</p>
+        <div class="table-wrap"><table><caption class="sr-only">동일 원음 기반 받아쓰기와 화자 구분의 관찰 결과</caption><thead><tr><th scope="col">비교 항목</th><th scope="col">클로바노트 · CLOVA Speech</th><th scope="col">이 프로그램(Whisper + sherpa-onnx + Claude)</th></tr></thead><tbody>
+          <tr><th scope="row">단어 인식</th><td data-label="클로바노트 · CLOVA Speech">이번 테스트에서 상대적으로 정확</td><td data-label="이 프로그램(Whisper + sherpa-onnx + Claude)">오인식이 더 있었고, Claude가 일부 표현을 보정</td></tr>
+          <tr><th scope="row">화자 구분</th><td data-label="클로바노트 · CLOVA Speech">각 2명으로 구분, 발언이 한 명에게 편중</td><td data-label="이 프로그램(Whisper + sherpa-onnx + Claude)">4명으로 구분, 사람별 회의 내용 정리에 활용</td></tr>
+          <tr><th scope="row">검토할 부분</th><td data-label="클로바노트 · CLOVA Speech">화자별 발언 배정</td><td data-label="이 프로그램(Whisper + sherpa-onnx + Claude)">고유명사·누락 내용·담당자</td></tr>
+        </tbody></table></div>
+        <p class="comparison-note">약 20분 원음 1건의 관찰 결과이며 일반적인 성능 우열을 뜻하지 않습니다. CLOVA Speech는 기본 설정·19분 50초 편집본으로 비교해 조건이 완전히 같지는 않습니다.</p>
+        
+        <p class="guide-source">클로바노트™는 NAVER㈜의 상표이며 CLOVA Speech 관련 상표는 해당 권리자에게 귀속됩니다. 본 앱은 해당 서비스와 제휴·공식 연동 관계가 없습니다.</p></section><section class="comparison-panel" id="compare-panel-1" hidden>
+        <h2>같은 회의, 녹음 파일에 따른 결과 비교</h2>
+        <p>같은 회의를 노트북 내장 마이크와 아이폰 녹음 기능으로 동시에 녹음한 뒤, 두 음성 파일을 이 프로그램에서 처리했습니다. 녹음 파일에 따라 결과가 얼마나 달라지는지 살펴본 비교입니다.</p>
+        <div class="table-wrap"><table><caption class="sr-only">노트북 내장 마이크와 아이폰으로 녹음한 동일 회의의 처리 결과</caption><thead><tr><th scope="col">비교 항목</th><th scope="col">노트북 내장 마이크 녹음</th><th scope="col">아이폰 녹음</th></tr></thead><tbody>
+          <tr><th scope="row">녹음 길이</th><td data-label="노트북 내장 마이크 녹음">약 4분 16초</td><td data-label="아이폰 녹음">약 4분 30초</td></tr>
+          <tr><th scope="row">받아쓴 분량</th><td data-label="노트북 내장 마이크 녹음">약 4,020자 · 자막 154구간</td><td data-label="아이폰 녹음">약 4,320자 · 자막 186구간</td></tr>
+          <tr><th scope="row">화자 구분·이름</th><td data-label="노트북 내장 마이크 녹음">2명 구분 · 두 번째 화자 이름 미식별</td><td data-label="아이폰 녹음">2명 구분 · 두 번째 화자 이름 식별</td></tr>
+          <tr><th scope="row">단어 인식</th><td data-label="노트북 내장 마이크 녹음">전문 용어·사람 이름 오인식 발생</td><td data-label="아이폰 녹음">전문 용어·사람 이름 오인식 발생</td></tr>
+          <tr><th scope="row">회의록 결과</th><td data-label="노트북 내장 마이크 녹음">일감 4건</td><td data-label="아이폰 녹음">일감 3건 · 일부 일감 담당자가 노트북 결과와 다름</td></tr>
+        </tbody></table></div>
+        <p><b>이번에는 아이폰 녹음에서 두 번째 화자 이름이 식별됐습니다.</b> 다만 두 파일 모두 단어 오류가 있었고 일부 일감 담당자도 달라, 결과를 원음과 대조해 확인해야 합니다.</p>
+        <p class="comparison-note">동일 회의 1건을 녹음한 두 파일의 관찰 결과입니다. 녹음 길이와 문장 분절이 달라 글자 수·일감 수가 많다고 더 정확하다는 뜻은 아닙니다. 정답 원문 기준의 오류율을 측정하지 않아 정확도 개선율(%)이나 기기 전체의 우열은 판단할 수 없습니다.</p>
+        </section><section class="comparison-panel" id="compare-panel-3" hidden>
+  <h2>비용과 활용 방식 비교</h2><p class="comparison-lead">클로바노트는 바로 쓰는 서비스, 이 프로그램은 내 환경에 맞춰 운영하는 도구입니다. 비용과 준비 범위가 다릅니다.</p>
+  <div class="cost-views" role="group" aria-label="비용 비교 보기"><button data-cost-view="summary" class="active" aria-pressed="true">비용 요약</button><button data-cost-view="features" aria-pressed="false">기능·운영 비교</button><button data-cost-view="details" aria-pressed="false">장단점·출처</button></div>
+  <div data-cost-panel="summary">  <div class="price-cards"><article><span>WHISPER PERSONAL</span><h3>앱 자체 이용료 <b>0원</b></h3><p>별도 분당 음성 인식료 없이 내 PC·서버에서 처리합니다. AI 구독과 PC·서버 운영비는 별도입니다.</p></article><article><span>CLOVANOTE / BUSINESS</span><h3>Lite <b>월 20,000원</b></h3><p>기업당 월간 계약 기준. 월 변환 1,000분·AI 요약 25회. 개인용 클로바노트와 다른 상품입니다.</p></article><article><span>CLOVA SPEECH / API</span><h3>음성 + 화자 <b>시간당 1,680원</b></h3><p>15초당 음성 5원 + 화자 2원으로 계산한 예시입니다. 요약·저장·트래픽 등은 포함하지 않습니다.</p></article></div>
+  </div><div data-cost-panel="features" hidden>  <div class="table-wrap"><table><caption class="sr-only">서비스별 비용과 관리 범위</caption><thead><tr><th>비교 항목</th><th>클로바노트</th><th>Whisper Personal</th></tr></thead><tbody>
+    <tr><th>비용 구조</th><td>개인용은 공식 무료 제공량·조건 확인. 기업용은 플랜별 요금과 제공량 적용.</td><td>앱 자체 이용료 없음. 음성 처리 장비·전기·서버비, 선택한 AI 구독 비용은 별도.</td></tr>
+    <tr><th>음성·화자 구분</th><td>두 기능 모두 제공. 화자 구분은 우리 프로그램만의 기능이 아닙니다.</td><td>Whisper + sherpa-onnx로 로컬 처리. 화자 수와 발언 배정은 검토가 필요합니다.</td></tr>
+    <tr><th>시작·관리</th><td>서비스에 접속해 사용. 기업용은 플랜에 따라 관리·감사·고객 지원 제공.</td><td>설치·모델 다운로드·GPU/CPU 환경과 업데이트를 직접 관리.</td></tr>
+    <tr><th>문서 정리</th><td>서비스가 제공하는 요약과 편집 기능 사용.</td><td>Claude Code 또는 Codex를 선택하고 양식·용어집을 조정. AI 정리 시 대본은 해당 서비스로 전달.</td></tr>
+    <tr><th>후속 업무 연결</th><td>기업용 Team 이상에서 외부 시스템 연동 API 제공.</td><td>연결된 Confluence·Jira·Slack과 GitLab에 문서·일감 전달. 현재 외부 공유는 Claude 연결 필요.</td></tr>
+  </tbody></table></div>
+  </div><div data-cost-panel="details" hidden>  <div class="fit-grid"><article><span>이 프로그램이 맞는 경우</span><h3>설정과 흐름을 직접 바꾸고 싶을 때</h3><p>음성을 내 장비에서 처리하고, 인식 모델·AI 도구·문서 양식·업무 연동을 직접 조정할 수 있다는 점이 강점입니다.</p></article><article><span>클로바노트가 맞는 경우</span><h3>설치와 운영 부담을 줄이고 싶을 때</h3><p>준비된 기록·요약 환경을 바로 사용하고, 기업용 관리·지원이 필요하다면 공식 제공 범위를 살펴보세요.</p></article></div>
+  <p class="comparison-note">화자 구분은 공통 기능입니다. 한 번의 테스트로 정확도나 비용 절감률을 일반화하지 않습니다. 장비·AI 구독·운영 시간을 포함해 비교하세요. 네이버웍스 기업용 Lite 연간 계약은 월 18,000원이며 Team 월간 계약은 기업당 월 108,000원(6,000분·150회)입니다. 세금·부가 비용과 실제 청구 조건은 공식 페이지를 확인하세요.</p>
+  <div class="comparison-sources"><span>공식 안내 확인: 2026.10.23 · 개인용 최신 제공량은 재확인 필요</span><a href="https://naver.worksmobile.com/pricing/clovanote/" target="_blank" rel="noopener noreferrer">네이버웍스 요금 ↗</a><a href="https://clovanote.naver.com/plan-guide" target="_blank" rel="noopener noreferrer">개인용 안내 ↗</a><a href="https://www.ncloud.com/charge/price/ko" target="_blank" rel="noopener noreferrer">CLOVA Speech 요금 ↗</a></div>
+  </div>
+</section>
+<section class="comparison-panel" id="compare-panel-2" hidden><h2>다음에 비교할 것들</h2><p class="comparison-lead">아직 측정 결과가 없는 항목입니다. 조건을 맞춰 비교할 기준을 정리했습니다.</p><div class="comparison-topics"><article><span>01 / MODEL</span><h3>인식 모델별 차이</h3><p>같은 파일로 turbo·large-v3·medium의 처리 시간, 고유명사 오류, 누락 문장을 비교합니다.</p></article><article><span>02 / AUDIO</span><h3>녹음 환경별 차이</h3><p>마이크 거리·소음·말 겹침을 기록하고, 화자 수와 발언 배정이 어떻게 달라지는지 봅니다.</p></article><article><span>03 / DOCUMENT</span><h3>AI 문서 정리 비교</h3><p>같은 대본과 같은 요청으로 Claude Code·Codex의 핵심 요약, 사실 누락, 담당자·기한을 대조합니다.</p></article><article><span>04 / WORKFLOW</span><h3>검토까지 걸리는 시간</h3><p>생성 시간뿐 아니라 대본 수정·화자 확인·문서 검토에 실제로 쓴 시간도 함께 기록합니다.</p></article></div><div class="comparison-callout">새 비교 결과가 준비되면 이 화면에 추가할 수 있습니다. 현재는 비교 기준만 표시합니다.</div></section></div></section>
+    <section class="page" id="page-stats">
+      <div class="page-head"><span class="eyebrow">YOUR WORK, AT A GLANCE</span><h1>활동과 사용량</h1>
+        <p>내가 돌린 작업의 걸린 시간, 단계별 시간, 음성 길이, Claude 토큰 사용량이에요. 내 브라우저에서 한 작업만 보여요.</p></div>
+      <div id="stats-body"><div class="empty">불러오는 중…</div></div>
+    </section>
+
+    <!-- 연결 관리 -->
+    <section class="page" id="page-connections">
+      <div class="page-head"><span class="eyebrow">MAKE IT YOURS</span><h1>나의 도구 연결하기</h1>
+        <p>문서를 정리할 AI 도구 하나를 선택하고, 필요한 업무 서비스를 연결하세요.</p></div>
+      <div class="connections-layout">
+        <div class="connections-ai-panel">
+      <div class="section-label"><h2>문서를 정리할 AI 도구</h2><span>받아쓰기에는 AI 계정이 필요하지 않아요</span></div><div class="account-engine-choice"><div><label for="connections-engine">사용할 AI 도구</label><p>선택한 도구 하나만 연결해 문서를 정리합니다.</p></div><select id="connections-engine"><option value="claude">Claude Code</option><option value="codex">Codex · OpenAI</option></select></div><div class="engine-connections"><div class="card ai-account" id="claude-account-card">      <div class="ai-account-body">
+        <div class="row"><span class="dot wait" id="claude-dot"></span><span class="title">Claude Code</span></div>
+        <div class="detail" id="claude-detail">연결 확인 중…</div>
+        <div class="input-row" id="claude-code-row" style="display:none;margin:6px 0">
+          <input class="input" id="claude-code-input" aria-label="Claude 인증 코드" placeholder="로그인 페이지에서 받은 인증 코드를 붙여넣으세요">
+          <button class="btn" id="claude-code-submit">확인</button>
+        </div>
+        <div class="btns">
+          <button class="btn-side" id="claude-login">연결</button>
+          <button class="btn-side" id="claude-refresh" style="flex:none;width:38px" title="다시 확인">↻</button>
+        </div>
+      </div><p class="account-note">문서 정리와 연결된 도구로 공유할 때 사용합니다.</p></div><div class="card ai-account" id="codex-account-card" hidden><div class="ai-account-body"><div class="row"><span class="dot wait" id="codex-dot"></span><span class="title">Codex <small>OpenAI</small></span></div><div class="detail" id="codex-detail">연결 확인 중…</div><div class="codex-device" id="codex-device" hidden><p>로그인 페이지에 아래 코드를 입력하세요.</p><code id="codex-device-code"></code><a class="auth-link" id="codex-device-link" target="_blank" rel="noopener noreferrer">Codex 로그인 페이지 열기 ↗</a></div><div class="btns"><button class="btn-side" id="codex-login">연결</button><button class="btn-side" id="codex-refresh" title="Codex 연결 상태 다시 확인" aria-label="Codex 연결 상태 다시 확인">↻</button></div></div><p class="account-note">문서 정리에 사용합니다. 외부 공유 연결은 별도입니다.</p></div></div>
+        </div>
+      <div class="card connections-mcp-card">
+        <div class="card-head"><div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round"><path d="M9 7H7a5 5 0 0 0 0 10h2M15 7h2a5 5 0 0 1 0 10h-2M8 12h8"/></svg></div><h3>MCP 커넥터</h3>
+          <div class="right" style="display:flex;gap:8px"><button class="btn sm" id="mcp-refresh">↻ 새로고침</button><button class="btn sm" id="mcp-open-settings">claude.ai 커넥터 설정 열기</button></div></div>
+        <div class="mcp-list" id="mcp-list"><div class="empty">불러오는 중… (10초쯤 걸려요)</div></div>
+        <div class="help" style="margin:12px 0 0">claude.ai 커넥터는 claude.ai 계정에 붙어 있어서, 연결·해제는 claude.ai 설정에서 하고 이 PC에서는 인증만 해요. 상태가 이상하면 [새로고침]을 눌러 주세요.</div>
+      </div>
+      <div class="card connections-advanced-card">
+        <div class="card-head"><div class="ico"><svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.4" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg></div><h3>MCP 서버 직접 추가</h3><span class="right tag muted">고급</span></div>
+        <div class="field"><label>이름</label><input class="input" id="mcp-name" placeholder="예: sentry, company-wiki (영문)"></div>
+        <div class="field"><label>주소</label><div class="input-row"><input class="input" id="mcp-url" placeholder="https://…/mcp">
+          <select id="mcp-transport"><option value="http">HTTP</option><option value="sse">SSE</option></select></div></div>
+        <div class="field"><label>헤더 (선택)</label><input class="input" id="mcp-header" type="password" autocomplete="off" placeholder="예: Authorization: Bearer …  (서비스가 토큰을 요구할 때만)"></div>
+        <div style="display:flex;justify-content:flex-end;gap:8px;margin-top:6px">
+          <button class="btn ghost" id="mcp-add-help">추가 방법</button><button class="btn" id="mcp-add">추가하기</button></div>
+      </div>
+      <div class="card connections-gitlab-card">
+        <div class="card-head"><div class="ico" style="background:#fff1e8;color:#e24329"><svg width="16" height="16" viewBox="0 0 24 24" fill="currentColor"><path d="m12 21-9-7 3-10 3 7h6l3-7 3 10z"/></svg></div><h3>GitLab</h3>
+          <span class="right" id="g-token-tag"><span class="tag muted">토큰 확인 중…</span></span></div>
+        <div class="field"><label>저장소 주소</label><div class="input-row"><input class="input" id="g-repo" placeholder="http://서버/그룹/프로젝트.git"><button class="btn" id="g-check">연결 확인</button><button class="btn" id="g-open">저장소 열기 ↗</button></div></div>
+        <div class="field"><label>액세스 토큰</label><div class="input-row"><input class="input" id="g-token" type="password" autocomplete="off" placeholder="GitLab 개인 액세스 토큰 (범위: api)"><button class="btn" id="g-save">저장</button><button class="btn ghost" id="g-forget">지우기</button></div></div>
+        <div class="help">GitLab은 MCP가 아니라 액세스 토큰으로 연결해요. GitLab → 사용자 설정 → 액세스 토큰에서 <b>api</b> 범위로 만들어 붙여 넣으세요. 토큰은 이 PC의 Windows 자격 증명 관리자에만 저장돼요.</div>
+        <div class="doc-summary" id="g-proj"></div>
+      </div>
+      </div>
+    </section>
+  </main>
+</div>
+
+<div id="dl-users-holder" hidden></div><datalist id="dl-spaces"></datalist><datalist id="dl-projects"></datalist><datalist id="dl-channels"></datalist>
+<div id="dropzone"><div class="dz"><b id="dz-title">여기에 놓으세요</b><span id="dz-text"></span></div></div>
+<div id="toasts"></div>
+<div class="backdrop" id="backdrop"><div class="modal">
+  <div class="m-body"><h2 id="m-head"></h2><div class="m-text" id="m-text"></div></div>
+  <div class="m-foot" id="m-foot"></div>
+</div></div>
+
+<script>
+const $ = (id) => document.getElementById(id);
+const esc = (s) => String(s ?? "").replace(/[&<>"]/g, (c) => ({"&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;"}[c]));
+let api = null, docPath = "", docItems = [];
+
+
+/* ---------- 모달 · 토스트 ---------- */
+function modal(title, text, buttons) {
+  return new Promise((resolve) => {
+    $("m-head").textContent = title; $("m-text").textContent = text;
+    const foot = $("m-foot"); foot.innerHTML = "";
+    buttons.forEach((b) => {
+      const el = document.createElement("button");
+      el.className = b.primary ? "btn-primary" : "btn"; el.textContent = b.label;
+      el.onclick = () => { $("backdrop").classList.remove("show"); resolve(b.value); };
+      foot.appendChild(el);
+    });
+    $("backdrop").classList.add("show");
+  });
+}
+const alertBox = (title, text) => modal(title, text, [{label: "확인", value: true, primary: true}]);
+// 글 한 줄을 입력받는 창 (확인 → 입력값, 취소 → null)
+function promptBox(title, label, value = "") {
+  return new Promise((resolve) => {
+    $("m-head").textContent = title;
+    $("m-text").innerHTML = `<div style="margin-bottom:8px">${esc(label)}</div><input class="input" id="prompt-input" style="width:100%" value="${esc(value)}">`;
+    const foot = $("m-foot"), input = $("prompt-input");
+    const done = (v) => { $("backdrop").classList.remove("show"); resolve(v); };
+    foot.innerHTML = "";
+    const cancel = document.createElement("button"); cancel.className = "btn"; cancel.textContent = "취소"; cancel.onclick = () => done(null);
+    const ok = document.createElement("button"); ok.className = "btn-primary"; ok.textContent = "확인"; ok.onclick = () => done(input.value.trim() || null);
+    foot.append(cancel, ok);
+    input.onkeydown = (e) => { if (e.key === "Enter") ok.click(); if (e.key === "Escape") cancel.click(); };
+    $("backdrop").classList.add("show");
+    setTimeout(() => input.focus(), 50);
+  });
+}
+function toast(title, text, opts = {}) {
+  const el = document.createElement("div");
+  el.className = "toast" + (opts.error ? " err" : "");
+  el.innerHTML = `<span class="t-dot"></span><div class="t-body"><b>${esc(title)}</b>${esc(text)}` +
+    (opts.action ? `<br><span class="t-act">${esc(opts.action.label)} →</span>` : "") + `</div>`;
+  if (opts.action) el.querySelector(".t-act").onclick = () => { opts.action.run(); el.remove(); };
+  $("toasts").appendChild(el);
+  setTimeout(() => el.remove(), opts.ms || 7000);
+}
+
+/* ---------- 페이지 이동 ---------- */
+let mcpLoaded = false;
+function go(page) {
+  document.querySelectorAll(".nav button").forEach((b) => b.classList.toggle("active", b.dataset.page === page));
+  $("nav-connections").classList.toggle("active", page === "connections");
+  $("nav-stats").classList.toggle("active", page === "stats");
+  document.querySelectorAll(".page").forEach((p) => p.classList.toggle("active", p.id === "page-" + page));
+  document.querySelectorAll("[data-page]").forEach((b) => {
+    if (b.dataset.page === page) b.setAttribute("aria-current", "page");
+    else b.removeAttribute("aria-current");
+  });
+  document.querySelector("main").scrollTop = 0;
+  window.scrollTo({top:0, behavior:"instant"});
+  if (page === "connections") { if (!mcpLoaded) loadMcp(); refreshToken(); }
+  if (page === "stats") loadStats();
+}
+document.querySelectorAll(".nav button").forEach((b) => (b.onclick = () => go(b.dataset.page)));
+$("nav-connections").onclick = () => go("connections");
+$("nav-stats").onclick = () => go("stats");
+
+/* ---------- 통계 ---------- */
+let statsDirty = true;
+async function loadStats() {
+  if (!statsDirty && $("stats-body").dataset.loaded) return;
+  $("stats-body").innerHTML = '<div class="empty">불러오는 중…</div>';
+  const r = await api.get_stats();
+  statsDirty = false; $("stats-body").dataset.loaded = "1";
+  renderStats((r && r.records) || []);
+}
+const nfmt = (x) => Number(x || 0).toLocaleString("ko-KR");
+// 같은 회의의 받아쓰기·회의록·공유를 한 줄로 묶는다 (회의.m4a → 회의.txt → 회의_회의록.json)
+const cycleKey = (name) => String(name || "").split(",")[0].trim().replace(/\.[^.]+$/, "").replace(/_회의록(데이터)?$/, "");
+function stageSum(recs, name) { return recs.reduce((a, r) => a + (r.stages || []).filter((s) => s.stage === name).reduce((b, s) => b + (s.seconds || 0), 0), 0); }
+function renderStats(recs) {
+  const box = $("stats-body");
+  if (!recs.length) { box.innerHTML = '<div class="card"><div class="empty">아직 기록이 없어요. 받아쓰기나 회의록을 한 번 돌리면 여기에 쌓여요.</div></div>'; return; }
+  const ok = recs.filter((r) => r.result === "done");
+  const mediaSec = ok.reduce((a, r) => a + (r.media || []).reduce((b, m) => b + (m.media_seconds || 0), 0), 0);
+  const tokIn = recs.reduce((a, r) => a + ((r.usage && r.usage.input) || 0), 0);
+  const tokOut = recs.reduce((a, r) => a + ((r.usage && r.usage.output) || 0), 0);
+  const cost = recs.reduce((a, r) => a + ((r.usage && r.usage.cost_usd) || 0), 0);
+  const tRecs = ok.filter((r) => r.job === "t" && (r.media || []).length);
+  const tMedia = tRecs.reduce((a, r) => a + r.media.reduce((b, m) => b + (m.media_seconds || 0), 0), 0);
+  const tTime = tRecs.reduce((a, r) => a + (r.elapsed || 0), 0);
+  const speed = tMedia ? tTime / (tMedia / 60) : 0;
+
+  const tiles = `<div class="stat-grid">
+    <div class="stat-tile"><small>실행한 작업</small><b>${nfmt(recs.length)}건</b><span>성공 ${nfmt(ok.length)} · 실패·중지 ${nfmt(recs.length - ok.length)}</span></div>
+    <div class="stat-tile"><small>받아쓴 음성·영상</small><b>${fmtDur(mediaSec)}</b><span>${nfmt(tRecs.length)}개 파일</span></div>
+    <div class="stat-tile"><small>받아쓰기 속도</small><b>${speed ? fmtDur(speed) : "—"}</b><span>음성 1분당 처리 시간</span></div>
+    <div class="stat-tile"><small>Claude 토큰</small><b>${nfmt(tokIn + tokOut)}</b><span>입력 ${nfmt(tokIn)} · 출력 ${nfmt(tokOut)}${cost ? ` · API 기준 $${cost.toFixed(2)}` : ""}</span></div>
+  </div>`;
+
+  // 회의 단위 (한 사이클)
+  const groups = new Map();
+  [...recs].reverse().forEach((r) => {
+    if (!r.file || !["t", "m", "p"].includes(r.job)) return;
+    const k = cycleKey(r.file);
+    if (!groups.has(k)) groups.set(k, {name: k, ts: r.ts, recs: []});
+    groups.get(k).recs.push(r);
+  });
+  const cyc = [...groups.values()].sort((a, b) => b.ts - a.ts).slice(0, 50);
+  const tsec = (g, job) => g.recs.filter((r) => r.job === job && r.result === "done").reduce((a, r) => a + (r.elapsed || 0), 0);
+  const cycRows = cyc.map((g) => {
+    const media = g.recs.reduce((a, r) => a + (r.media || []).reduce((b, m) => b + (m.media_seconds || 0), 0), 0);
+    const u = g.recs.reduce((a, r) => a + ((r.usage && (r.usage.input + r.usage.output)) || 0), 0);
+    const [t, m, p] = ["t", "m", "p"].map((j) => tsec(g, j));
+    const cell = (s) => (s ? fmtDur(s) : '<span class="sub">—</span>');
+    return `<tr><td>${esc(g.name)}<div class="sub">${new Date(g.ts * 1000).toLocaleString("ko-KR")}</div></td>
+      <td class="num">${media ? fmtDur(media) : '<span class="sub">—</span>'}</td>
+      <td class="num">${cell(t)}</td><td class="num">${cell(m)}</td><td class="num">${cell(p)}</td>
+      <td class="num"><b>${cell(t + m + p)}</b></td><td class="num">${u ? nfmt(u) : '<span class="sub">—</span>'}</td></tr>`;
+  }).join("");
+  const cycCard = `<div class="card"><div class="card-head"><h3>회의별 (받아쓰기 → 회의록 → 공유 한 사이클)</h3></div>
+    <div class="stat-table-wrap"><table class="stat-table"><thead><tr><th>회의</th><th class="num">음성 길이</th><th class="num">받아쓰기</th>
+    <th class="num">회의록</th><th class="num">공유</th><th class="num">전체</th><th class="num">토큰</th></tr></thead>
+    <tbody>${cycRows || '<tr><td colspan="7" class="sub">아직 없어요</td></tr>'}</tbody></table></div></div>`;
+
+  // 단계별 평균
+  const stages = new Map();
+  ok.forEach((r) => (r.stages || []).forEach((s) => {
+    const e = stages.get(s.stage) || {n: 0, sec: 0};
+    e.n++; e.sec += s.seconds || 0; stages.set(s.stage, e);
+  }));
+  const perMin = (name) => (tMedia && ["화자 구분", "받아쓰기"].includes(name) ? fmtDur(stageSum(tRecs, name) / (tMedia / 60)) : "");
+  const stRows = [...stages.entries()].map(([name, e]) => `<tr><td>${esc(name)}</td><td class="num">${nfmt(e.n)}</td>
+    <td class="num">${fmtDur(e.sec / e.n)}</td><td class="num">${perMin(name) || '<span class="sub">—</span>'}</td></tr>`).join("");
+  const stCard = `<div class="card"><div class="card-head"><h3>단계별 평균 시간</h3></div>
+    <div class="stat-table-wrap"><table class="stat-table"><thead><tr><th>단계</th><th class="num">횟수</th><th class="num">평균</th>
+    <th class="num">음성 1분당</th></tr></thead><tbody>${stRows || '<tr><td colspan="4" class="sub">아직 없어요</td></tr>'}</tbody></table></div></div>`;
+
+  // 최근 작업
+  const resText = {done: "완료", error: "오류", stopped: "중지"};
+  const jobRows = recs.slice(0, 100).map((r) => {
+    const st = (r.stages || []).map((s) => `${esc(s.stage)} ${fmtDur(s.seconds)}`).join(" · ");
+    const media = (r.media || []).reduce((a, m) => a + (m.media_seconds || 0), 0);
+    return `<tr><td>${new Date(r.ts * 1000).toLocaleString("ko-KR")}</td><td>${esc(r.task || r.job)}</td>
+      <td>${esc(r.file || "")}${media ? `<div class="sub">음성 ${fmtDur(media)}</div>` : ""}</td>
+      <td class="${r.result === "done" ? "" : "bad"}">${resText[r.result] || esc(r.result)}</td>
+      <td class="num">${fmtDur(r.elapsed)}${st ? `<div class="sub">${st}</div>` : ""}</td>
+      <td class="num">${r.usage ? `${nfmt(r.usage.input + r.usage.output)}<div class="sub">입력 ${nfmt(r.usage.input)} · 출력 ${nfmt(r.usage.output)}</div>` : '<span class="sub">—</span>'}</td></tr>`;
+  }).join("");
+  const jobCard = `<div class="card"><div class="card-head"><h3>최근 작업</h3><div class="right"><button class="btn sm" id="stats-refresh">↻ 새로고침</button></div></div>
+    <div class="stat-table-wrap"><table class="stat-table"><thead><tr><th>시작</th><th>작업</th><th>파일</th><th>결과</th>
+    <th class="num">걸린 시간</th><th class="num">토큰</th></tr></thead><tbody>${jobRows}</tbody></table></div></div>`;
+
+  box.innerHTML = tiles + cycCard + stCard + jobCard;
+  $("stats-refresh").onclick = () => { statsDirty = true; loadStats(); };
+}
+
+/* ---------- 작업 패널 ---------- */
+// 받아쓰기(t)와 회의록 정리(m)는 같은 화면·같은 실행 패널(t-…)을 함께 쓴다
+const panel = (job) => (job === "m" ? "t" : job);
+function setStatus(job, text, tone = "", pct = null) {
+  job = panel(job);
+  const s = $(job + "-status");
+  s.className = "status " + tone;
+  s.querySelector(".text").textContent = text;
+  if (pct !== null) s.querySelector(".pct").textContent = pct;
+}
+function setProgress(job, v) {
+  job = panel(job);
+  const pct = Math.round(v * 100) + "%";
+  $(job + "-bar").firstElementChild.style.width = pct;
+  $(job + "-status").querySelector(".pct").textContent = pct;
+  if ($("st-" + job).classList.contains("nav-running")) $("st-" + job).textContent = pct;
+}
+function setRunning(job, on) {
+  job = panel(job);
+  $(job + "-run").disabled = on; $(job + "-stop").disabled = !on;
+  $(job + "-bar").classList.toggle("running", on);
+  $("st-" + job).className = "state" + (on ? " nav-running" : "");
+  $("st-" + job).textContent = on ? "0%" : "";
+}
+// 끝나면 사이드바 알약을 감춘다 (진행 중일 때만 % 를 보여 준다)
+function setNavDone(job) { job = panel(job); $("st-" + job).className = "state"; $("st-" + job).textContent = ""; }
+function log(job, text, cls = "") {
+  const c = $(panel(job) + "-log");
+  c.insertAdjacentHTML("beforeend", `<div class="${cls}">${esc(text)}</div>`);
+  c.scrollTop = c.scrollHeight;
+}
+
+/* ---------- 파일 고르기 ---------- */
+document.querySelectorAll("[data-pick]").forEach((b) => (b.onclick = async () => {
+  const target = $(b.dataset.target);
+  const res = await api.pick(b.dataset.pick, target.value);
+  if (res && res.error) return alertBox("파일 선택", res.error);
+  if (Array.isArray(res) ? res.length : res) {
+    target.value = Array.isArray(res) ? res.join("; ") : res;
+    target.dispatchEvent(new Event("change"));
+  }
+}));
+function renderPills() {
+  const files = $("t-files").value.split(";").map((s) => s.trim()).filter(Boolean);
+  $("t-file-pills").innerHTML = files.length > 1 || (files.length === 1 && files[0].includes("\\"))
+    ? files.map((f) => `<span class="file-pill">${esc(f.split(/[\\/]/).pop())}</span>`).join("") : "";
+}
+$("t-files").addEventListener("change", renderPills);
+$("t-files").addEventListener("input", renderPills);
+
+/* ---------- Claude 연결 ---------- */
+let loginTab = null, loginTabUsed = true;  // 페이지를 열 때 지난 이벤트가 다시 와도 탭을 열지 않게, 클릭했을 때만 false
+function showClaude(d) {
+  const dot = $("claude-dot"), det = $("claude-detail"), btn = $("claude-login"), codeRow = $("claude-code-row");
+  if (d.pending) {
+    dot.className = "dot wait";
+    det.innerHTML = d.login_url
+      ? `로그인 페이지에서 인증을 완료해 주세요.<a class="auth-link" href="${esc(d.login_url)}" target="_blank" rel="noopener noreferrer">Claude 로그인 페이지 열기 ↗</a>`
+      : "로그인 준비 중…";
+    codeRow.style.display = d.login_url ? "flex" : "none";
+    // 클릭 직후 미리 열어 둔 빈 탭을, 주소를 알게 되면 바로 그리로 이동시킨다 (팝업 차단 피하려고)
+    if (d.login_url && !loginTabUsed) {
+      loginTabUsed = true;
+      if (loginTab && !loginTab.closed) loginTab.location.href = d.login_url;
+      else window.open(d.login_url, "_blank");
+    }
+    return;
+  }
+  codeRow.style.display = "none";
+  claudeOk = !!d.ok;
+  if (d.ok) { dot.className = "dot ok"; det.textContent = `${d.email || "계정 연결됨"}${d.plan ? " · " + d.plan : ""}`; btn.textContent = "로그아웃"; }
+  else { dot.className = "dot bad"; det.textContent = d.missing ? "Claude Code가 서버에 설치돼 있지 않아요 — 관리자에게 문의하세요" : "연결 안 됨 — 연결을 눌러 주세요"; btn.textContent = "연결"; }
+}
+let claudeOk = false;
+/* 한 버튼: 연결돼 있으면 로그아웃, 아니면 연결 */
+$("claude-login").onclick = async () => {
+  if (!claudeOk) {
+    loginTab = window.open("about:blank", "_blank");
+    loginTabUsed = false;
+    return api.login();
+  }
+  if (!await modal("Claude 로그아웃", "이 PC에서 Claude 계정 연결을 끊어요. 회의록 정리와 공유를 하려면 다시 연결해야 해요.",
+                   [{label: "취소", value: false}, {label: "로그아웃", value: true, primary: true}])) return;
+  $("claude-dot").className = "dot wait"; $("claude-detail").textContent = "로그아웃 중…";
+  const r = await api.logout();
+  if (r && r.error) toast("로그아웃 실패", r.error, {error: true});
+};
+$("claude-refresh").onclick = () => { $("claude-dot").className = "dot wait"; api.check_claude(); };
+async function submitClaudeCode() {
+  const code = $("claude-code-input").value.trim();
+  if (!code) return;
+  $("claude-code-submit").disabled = true;
+  $("claude-detail").textContent = "코드 확인하는 중…";
+  const r = await api.submit_login_code(code);
+  $("claude-code-submit").disabled = false;
+  if (r && r.error) { toast("로그인 실패", r.error, {error: true}); return; }
+  $("claude-code-input").value = "";
+  $("claude-code-row").style.display = "none";
+}
+$("claude-code-submit").onclick = submitClaudeCode;
+$("claude-code-input").onkeydown = (e) => { if (e.key === "Enter") submitClaudeCode(); };
+
+const shareConnections = {atlassian: false, slack: false, gitlab: false, checking: true};
+function serviceAvailable(name) {
+  return name === "confluence" || name === "jira" ? shareConnections.atlassian : !!shareConnections[name];
+}
+function syncShareCards() {
+  const available = ["confluence", "slack", "jira", "gitlab"].filter(serviceAvailable);
+  document.querySelectorAll("[data-service]").forEach(card => {
+    card.hidden = card.dataset.service === "tasks" ? !shareConnections.atlassian && !shareConnections.gitlab : !serviceAvailable(card.dataset.service);
+  });
+  $("page-publish").classList.toggle("without-jira", !shareConnections.atlassian);
+  $("share-empty").hidden = available.length > 0;
+  $("share-empty").querySelector("b").textContent = shareConnections.checking ? "연결 상태를 확인하고 있습니다." : "연결된 공유 도구가 없습니다.";
+  $("share-empty").querySelector("p").textContent = shareConnections.checking ? "확인된 도구의 설정 카드가 여기에 표시됩니다." : "연결 관리에서 사용할 도구를 연결해 주세요.";
+  $("sharing-caption").textContent = available.length ? `${available.length}개 도구 사용 가능 · 이번에 공유할 도구를 선택하세요.` : "연결된 도구만 표시합니다.";
+  $("targets-load").hidden = !shareConnections.atlassian && !shareConnections.slack;
+}
+function showConnectors(d) {
+  if (d.checking) { shareConnections.checking = true; syncShareCards(); $("conn-tags").innerHTML = `<span class="tag muted">연결 확인 중…</span>`; return; }
+  shareConnections.atlassian = d.atlassian === "connected";
+  shareConnections.slack = d.slack === "connected";
+  shareConnections.checking = false;
+  const names = [];
+  if (shareConnections.atlassian) names.push("Atlassian");
+  if (shareConnections.slack) names.push("Slack");
+  $("conn-tags").innerHTML = names.map(name => `<span class="tag ok">● ${name}</span>`).join("") || `<span class="tag muted">MCP 연결 없음</span>`;
+  syncShareCards();
+}
+$("share-manage").onclick = () => go("connections");
+$("share-refresh").onclick = async () => {
+  const button = $("share-refresh");
+  button.disabled = true;
+  try {
+    showConnectors({checking:true});
+    const result = await api.check_connectors();
+    showConnectors(result || {});
+    await refreshToken();
+  } catch (_) { showConnectors({}); }
+  finally { button.disabled = false; }
+};
+syncShareCards();
+
+/* 올릴 곳 목록 (Confluence 스페이스 · Jira 프로젝트 · Slack 채널) */
+let targets = null;
+function applyTargets(t) {
+  if (!t) return;
+  targets = t;
+  $("dl-spaces").innerHTML = (t.spaces || []).map((s) => `<option value="${esc(s.key)}">${esc(s.name)}</option>`).join("");
+  $("dl-projects").innerHTML = (t.projects || []).map((p) => `<option value="${esc(p.key)}">${esc(p.name)}</option>`).join("");
+  $("dl-channels").innerHTML = (t.channels || []).map((c) => `<option value="${esc(c)}"></option>`).join("");
+  refreshUsers();
+  $("targets-info").textContent = `목록: 스페이스 ${(t.spaces || []).length} · 프로젝트 ${(t.projects || []).length} · 채널 ${(t.channels || []).length} — 입력칸을 누르면 골라 쓸 수 있어요`;
+}
+// 담당자 후보: 그 Jira 프로젝트의 사람들 (프로젝트를 모르면 전체)
+const defaultProject = () => $("p-project").value.trim().toUpperCase();
+const usersListId = (key) => "dl-users-" + (String(key || "").toUpperCase().replace(/[^A-Z0-9_]/g, "") || "ALL");
+function userList(key = defaultProject()) {
+  if (!targets) return [];
+  key = String(key || "").trim().toUpperCase();
+  const projects = (targets.projects || []).filter((p) => !key || p.key === key);
+  const seen = new Map();
+  projects.forEach((p) => (p.users || []).forEach((u) => u && u.name && !seen.has(u.name) && seen.set(u.name, u)));
+  return [...seen.values()];
+}
+// 프로젝트마다 담당자 datalist를 만든다 (줄의 프로젝트가 바뀌면 그 줄의 담당자 목록도 바뀐다)
+function refreshUsers() {
+  const holder = $("dl-users-holder");
+  const keys = new Set([defaultProject(), ...[...document.querySelectorAll("#p-items .proj")].map((i) => i.value.trim().toUpperCase())]);
+  (targets && targets.projects || []).forEach((p) => keys.add(p.key));
+  holder.innerHTML = [...keys].map((k) => `<datalist id="${esc(usersListId(k))}">` +
+    userList(k).map((u) => `<option value="${esc(u.name)}"></option>`).join("") + `</datalist>`).join("");
+}
+function wireProjectCell(tr) {
+  const proj = tr.querySelector(".proj"), who = tr.querySelector(".who");
+  if (!proj) return;
+  proj.addEventListener("input", () => {
+    proj.dataset.custom = "1";  // 따로 바꾼 줄은 위쪽 기본 프로젝트를 바꿔도 그대로 둔다
+    proj.value = proj.value.toUpperCase();
+    refreshUsers(); who.setAttribute("list", usersListId(proj.value));
+  });
+}
+// 위쪽 기본 프로젝트를 바꾸면, 따로 바꾸지 않은 줄들도 같이 바뀐다
+$("p-project").addEventListener("input", () => {
+  const key = defaultProject();
+  document.querySelectorAll("#p-items tr[data-i]").forEach((tr) => {
+    const proj = tr.querySelector(".proj");
+    if (proj && !proj.dataset.custom) { proj.value = key; tr.querySelector(".who").setAttribute("list", usersListId(key)); }
+  });
+  refreshUsers();
+});
+$("targets-load").onclick = async () => {
+  const r = await api.start_list_targets();
+  if (r.error) alertBox("확인해 주세요", r.error);
+};
+// 목록에 없는 값이면 경고 문구를 돌려준다 (목록을 아직 안 불러왔으면 검사하지 않는다)
+function checkTarget(kind, value) {
+  if (!targets || !value) return "";
+  const norm = (s) => String(s).replace(/^#/, "").toLowerCase();
+  const list = kind === "space" ? targets.spaces.map((s) => s.key) : kind === "project" ? targets.projects.map((p) => p.key) : targets.channels;
+  if (!list || !list.length || list.some((x) => norm(x) === norm(value))) return "";
+  const word = {space: "Confluence 스페이스", project: "Jira 프로젝트", channel: "Slack 채널"}[kind];
+  return `${word} '${value}'는 불러온 목록에 없어요. (목록: ${list.slice(0, 6).join(", ")}${list.length > 6 ? " …" : ""})`;
+}
+// 기한 정리: 20261020 · 2026.10.20 · 2026/10/20 → 2026-10-20
+function normDate(s) {
+  const m = String(s || "").trim().match(/^(\d{4})[.\-\/]?(\d{1,2})[.\-\/]?(\d{1,2})\.?$/);
+  return m ? `${m[1]}-${m[2].padStart(2, "0")}-${m[3].padStart(2, "0")}` : String(s || "").trim();
+}
+
+/* ---------- ① 음성 → 텍스트 ---------- */
+const MODEL_NOTES = {
+  "large-v3-turbo": "빠르면서 정확해요. 대부분의 회의는 이걸로 충분해요.",
+  "large-v3": "가장 정확해요. 사투리·전문 용어가 많거나 '추천' 결과가 아쉬울 때 쓰세요. 약 3배 느려요.",
+  "medium": "정확도와 속도의 중간이에요. 그래픽카드 메모리가 부족할 때 쓰세요.",
+  "small": "빠르지만 틀리는 단어가 늘어요. 내용만 대충 훑어볼 때 쓰세요.",
+  "base": "가장 빠르고 가벼워요. 정확도가 낮아 회의록용으로는 추천하지 않아요.",
+};
+function showModelNote() {
+  const sel = $("t-model"); $("t-model-note").innerHTML = `<b>${esc(sel.options[sel.selectedIndex].text.split(" (")[0])}</b> — ${esc(MODEL_NOTES[sel.value] || "")}`;
+}
+$("t-model").addEventListener("change", showModelNote);
+// 스위치(label) 안의 ⓘ를 눌러도 스위치가 바뀌지 않게
+document.querySelectorAll("label .tip").forEach((t) => t.addEventListener("click", (e) => e.preventDefault()));
+// 양식 칸이 차 있을 때만 ✕(지우기)를 보여 준다. 비우면 기본 양식.
+/* 자세한 설정: 접혀 있을 때 지금 고른 값을 한 줄로 보여 준다 */
+function syncMoreSum() {
+  const minutes = $("page-make").dataset.mode === "minutes";
+  const quality = $("t-model").selectedOptions[0]?.textContent || "추천";
+  const formats = [...document.querySelectorAll(".chip input:checked")].map(c=>c.value.toUpperCase());
+  $("t-more-sum").textContent = minutes
+    ? [$("document-type").selectedOptions[0]?.textContent, personalEngineName(), formats.join(" · ")].filter(Boolean).join(" · ")
+    : [$("t-lang").value || "한국어", quality, $("t-diarize").checked ? `화자 구분 · ${$("t-speakers").value === "자동" ? "인원 자동" : $("t-speakers").value + "명"}` : "화자 구분 안 함"].join(" · ");
+}
+
+["t-lang", "t-model", "t-speakers", "t-diarize", "m-on", "m-template", "m-model", "m-glossary"].forEach((id) =>
+  ["input", "change"].forEach((ev) => $(id).addEventListener(ev, syncMoreSum)));
+$("m-model").addEventListener("change", () => api.save_settings({minutes_model: $("m-model").value}));
+$("m-glossary").addEventListener("change", () => api.save_settings({minutes_glossary: $("m-glossary").value}));
+$("t-more").addEventListener("toggle", () => { try { localStorage.setItem("more-open", $("t-more").open ? "1" : ""); } catch (e) {} });
+try { $("t-more").open = localStorage.getItem("more-open") === "1"; } catch (e) {}
+function syncTemplateClear() { $("m-template-clear").style.display = $("m-template").value.trim() ? "" : "none"; }
+["input", "change"].forEach((ev) => $("m-template").addEventListener(ev, syncTemplateClear));
+$("m-template-clear").onclick = () => { $("m-template").value = ""; syncTemplateClear(); };
+
+/* 한 버튼으로: 녹음이면 받아쓰기 → (화자 이름) → 회의록, 대본(.txt)이면 바로 회의록 */
+let curTxt = "";        // 회의록으로 만들 대본
+let flow = null;        // 받아쓰기가 끝나면 이어서 회의록을 만들지 {minutes: true}
+let activeJob = "t";    // 중지 버튼이 멈출 작업
+const isTxt = (f) => /\.txt$/i.test(f);
+const pickedFiles = () => $("t-files").value.split(";").map((s) => s.trim()).filter(Boolean);
+function syncRunLabel() {
+  const files = pickedFiles();
+  const txtOnly = files.length > 0 && files.every(isTxt);
+  $("t-run-label").textContent = txtOnly ? "회의록 만들기" : $("m-on").checked ? "대본 및 회의록 만들기" : "대본만 만들기";
+}
+["input", "change"].forEach((ev) => $("t-files").addEventListener(ev, syncRunLabel));
+$("m-on").addEventListener("change", () => { syncRunLabel(); api.save_settings({make_minutes: $("m-on").checked}); });
+
+// 회의록을 만들기 전에 확인할 것: Claude 연결, 형식, 양식 (긴 받아쓰기가 끝난 뒤에 막히지 않게 미리 묻는다)
+async function readyForMinutes() {
+  if (!(await personalEnsureEngine())) return false;
+  if (!document.querySelector(".chip input:checked")) { alertBox("확인해 주세요", "만들 형식(PDF·한글·워드·마크다운)을 하나 이상 고르세요."); return false; }
+
+  return true;
+}
+
+$("t-run").onclick = async () => {
+  const files = pickedFiles();
+  if (!files.length) return alertBox("확인해 주세요", "저장된 음성·영상 파일 또는 대본(.txt)을 고르세요.");
+  const txts = files.filter(isTxt), media = files.filter((f) => !isTxt(f));
+  if (txts.length && media.length) return alertBox("확인해 주세요", "녹음과 대본을 함께 넣을 수 없어요. 한 종류만 넣어 주세요.");
+  if (txts.length > 1) return alertBox("확인해 주세요", "대본(.txt)은 한 번에 하나만 넣어 주세요.");
+  const wantMinutes = txts.length > 0 || $("m-on").checked;
+  if (wantMinutes && !(await readyForMinutes())) return;
+  if (txts.length) { curTxt = txts[0]; return startMinutes(); }
+  const p = {files: media, out_dir: $("t-out").value, language: $("t-lang").value, model: $("t-model").value,
+    diarize: $("t-diarize").checked, speakers: $("t-speakers").value};
+  flow = {minutes: wantMinutes};
+  const r = await api.start_transcribe(p);
+  if (r.error) { flow = null; alertBox("확인해 주세요", r.error); }
+};
+$("t-stop").onclick = () => { flow = null; api.stop(activeJob); };
+
+/* 진행 중이든 끝났든, 지금 상태를 지우고 ①을 처음부터 다시 할 수 있게 한다 */
+function resetMake() {
+  if ($("t-run").disabled) api.stop(activeJob);  // 돌고 있으면 먼저 멈춘다
+  flow = null; curTxt = "";
+  $("t-files").value = ""; renderPills(); syncRunLabel();
+  $("t-spk").classList.remove("show"); $("t-spk").innerHTML = "";
+  hideNext("t"); hideNext("m");
+  setRunning("t", false); setRunning("m", false);
+  setProgress("t", 0); setProgress("m", 0);
+  setNavDone("t"); setNavDone("m");
+  setStatus("t", "저장된 음성·영상 파일을 업로드해 주세요.", "", "");
+}
+$("t-reset").onclick = resetMake;
+
+async function startMinutes() {
+  const formats = [...document.querySelectorAll(".chip input:checked")].map((c) => c.value);
+  const p = {txt: curTxt, out_dir: $("t-out").value, template: $("m-template").value, title: $("m-title").value,
+    date: $("m-date").value, formats,
+    model: personalModel(), glossary: $("m-glossary").value, engine: $("m-engine").value,
+    document_type: $("document-type").value, document_instructions: $("document-instructions").value};
+  const r = await api.start_minutes(p);
+  if (r.error) {
+    if (r.need_login && await modal(`${personalEngineName()} 연결 필요`, r.error, [{label: "나중에", value: false}, {label: "지금 연결", value: true, primary: true}])) personalLoginEngine();
+    else if (!r.need_login) alertBox("확인해 주세요", r.error);
+  }
+}
+
+/* ---------- ③ 회의 종류(프리셋): 회의마다 올릴 곳을 한 번에 바꾼다 ---------- */
+const SHARE_FIELDS = [  // [화면 칸 id, 속성, 저장 이름]
+  ["p-conf-on", "checked", "conf_on"], ["p-space", "value", "conf_space"], ["p-parent", "value", "conf_parent"],
+  ["p-jira-on", "checked", "jira_on"], ["p-project", "value", "jira_project"], ["p-type", "value", "jira_type"],
+  ["p-gl-on", "checked", "gl_on"], ["p-gl-repo", "value", "gitlab_repo"], ["p-gl-labels", "value", "gitlab_labels"],
+  ["p-slack-on", "checked", "slack_on"], ["p-channel", "value", "slack_channel"], ["p-slack-msg", "value", "slack_message"],
+];
+let presets = {};
+function collectShare() {
+  const o = {};
+  SHARE_FIELDS.forEach(([id, prop, key]) => (o[key] = prop === "value" ? $(id).value.trim() : $(id).checked));
+  return o;
+}
+function applyShare(o) {
+  if (!o) return;
+  SHARE_FIELDS.forEach(([id, prop, key]) => { if (o[key] !== undefined) $(id)[prop] = o[key]; });
+  $("p-project").dispatchEvent(new Event("input"));  // 표의 기본 프로젝트·담당자 목록도 따라 바뀐다
+  if ($("p-gl-repo").value) { $("g-repo").value = $("p-gl-repo").value; refreshToken(); }
+}
+function renderPresets(selected) {
+  const names = Object.keys(presets);
+  $("p-preset").innerHTML = names.length ? names.map((n) => `<option>${esc(n)}</option>`).join("")
+    : `<option value="">(저장된 회의 종류 없음)</option>`;
+  if (selected && presets[selected]) $("p-preset").value = selected;
+}
+function savePresets() { api.save_settings({share_presets: presets, share_preset_last: $("p-preset").value}); }
+async function newPreset() {
+  const name = await promptBox("새 회의 종류로 저장", "회의 종류 이름 (예: ML 회의, 주간 업무 회의)", "");
+  if (!name) return;
+  if (presets[name] && !await modal("같은 이름이 있어요", `'${name}'을 지금 설정으로 덮어쓸까요?`,
+    [{label: "취소", value: false}, {label: "덮어쓰기", value: true, primary: true}])) return;
+  presets[name] = collectShare();
+  renderPresets(name); savePresets();
+  toast("회의 종류를 저장했어요", name);
+}
+$("p-preset").onchange = () => { applyShare(presets[$("p-preset").value]); savePresets(); toast("올릴 곳을 바꿨어요", $("p-preset").value); };
+$("p-preset-save").onclick = () => {
+  const name = $("p-preset").value;
+  if (!name) return newPreset();
+  presets[name] = collectShare(); savePresets();
+  toast("저장했어요", `'${name}'에 지금 설정을 저장했어요.`);
+};
+$("p-preset-new").onclick = newPreset;
+$("p-preset-del").onclick = async () => {
+  const name = $("p-preset").value;
+  if (!name) return;
+  if (!await modal("회의 종류 삭제", `'${name}'을 지울까요? (Jira · Confluence 등에 올린 내용은 그대로예요)`,
+    [{label: "취소", value: false}, {label: "삭제", value: true, primary: true}])) return;
+  delete presets[name];
+  const first = Object.keys(presets)[0];
+  renderPresets(first); if (first) applyShare(presets[first]); savePresets();
+};
+
+/* ---------- ③ 공유하기 ---------- */
+const SLACK_NOTICE = "오늘 회의 업무 내용이 공유되었습니다. 각 담당자분들은 일감 및 내용 확인 바랍니다.";
+async function setDoc(path) {
+  $("p-doc").value = path; docPath = path;
+  const r = await api.load_doc(path);
+  if (r.error) { $("p-summary").innerHTML = `<span class="tag err">${esc(r.error)}</span>`; return; }
+  if (r.import) {
+    const s = await api.start_import(path);
+    if (s.error) alertBox("확인해 주세요", s.error);
+    return;
+  }
+  const d = r.doc;
+  $("p-summary").innerHTML = `<b>${esc(d.title || "회의록")}</b>` + (d.when ? `<span class="tag muted">${esc(d.when)}</span>` : "") +
+    `<span class="tag ok">할 일 ${d.actions.length}개</span>`;
+  docItems = d.actions;
+  const body = $("p-items");
+  if (!d.actions.length) { body.innerHTML = `<tr class="empty-row"><td colspan="6" class="empty">이 회의록에는 할 일이 없어요. [+ 할 일 추가]로 직접 넣을 수 있어요.</td></tr>`; return; }
+  body.innerHTML = d.actions.map((a, i) => {
+    const iso = normDate(a.due);  // 회의록의 기한이 날짜로 읽히면 달력에 미리 넣고, 아니면 원문을 툴팁으로
+    const dateOk = /^\d{4}-\d{2}-\d{2}$/.test(iso);
+    return `<tr data-i="${i}">
+      <td><input type="checkbox" class="check" checked></td>
+      <td><input class="input task" value="${esc(a.task)}"></td>
+      <td><input class="input proj" list="dl-projects" value="${esc(defaultProject())}"></td>
+      <td><input class="input who" list="${esc(usersListId(defaultProject()))}" placeholder="골라 쓰거나 입력"></td>
+      <td><input class="input due" type="date" value="${dateOk ? iso : ""}" ${!dateOk && a.due ? `title="회의록상 기한: ${esc(a.due)}"` : ""}></td>
+      <td class="owner">${esc(a.owner || "")}${!dateOk && a.due ? `<br><span style="font-size:11px">(${esc(a.due)})</span>` : ""}</td></tr>`;
+  }).join("");
+  body.querySelectorAll(".check").forEach((c) => (c.onchange = () => c.closest("tr").classList.toggle("off", !c.checked)));
+  body.querySelectorAll("tr[data-i]").forEach(wireProjectCell);
+}
+$("p-doc").addEventListener("change", () => $("p-doc").value.trim() && setDoc($("p-doc").value.trim()));
+
+// 회의 뒤에 정한 일 등을 직접 추가한다. 등록할 때는 회의록에서 나온 할 일과 똑같이 다룬다 (tr[data-i] + .check/.task/.who/.due)
+let manualSeq = 0;
+function addTaskRow() {
+  const body = $("p-items");
+  body.querySelectorAll(".empty-row").forEach((r) => r.remove());
+  const tr = document.createElement("tr");
+  tr.dataset.i = "m" + (++manualSeq);
+  tr.className = "manual";
+  tr.innerHTML = `
+    <td><input type="checkbox" class="check" checked></td>
+    <td><input class="input task" placeholder="할 일을 적어 주세요"></td>
+    <td><input class="input proj" list="dl-projects" value="${esc(defaultProject())}"></td>
+    <td><input class="input who" list="${esc(usersListId(defaultProject()))}" placeholder="골라 쓰거나 입력"></td>
+    <td><input class="input due" type="date"></td>
+    <td class="owner">직접 추가 <button class="btn ghost sm row-del" title="이 줄 지우기" style="height:26px;padding:0 8px">✕</button></td>`;
+  tr.querySelector(".check").onchange = (e) => tr.classList.toggle("off", !e.target.checked);
+  wireProjectCell(tr);
+  tr.querySelector(".row-del").onclick = () => {
+    tr.remove();
+    if (!body.querySelector("tr")) body.innerHTML = `<tr class="empty-row"><td colspan="6" class="empty">할 일이 없어요. [+ 할 일 추가]로 넣을 수 있어요.</td></tr>`;
+  };
+  body.appendChild(tr);
+  tr.querySelector(".task").focus();
+}
+$("p-add").onclick = addTaskRow;
+$("p-all").onchange = () => document.querySelectorAll("#p-items .check").forEach((c) => { c.checked = $("p-all").checked; c.onchange(); });
+
+$("p-run").onclick = async () => {
+  if (!docPath) return alertBox("회의록이 없어요", "먼저 회의록 파일을 불러오세요. ① 회의록을 만들면 자동으로 들어와요.");
+  const title = ($("p-summary").querySelector("b") || {}).textContent || "회의록";
+  const when = ($("p-summary").querySelector(".tag.muted") || {}).textContent || "";
+  const plan = {}, lines = [], problems = [];
+  if (serviceAvailable("confluence") && $("p-conf-on").checked) {
+    if (!$("p-space").value.trim()) problems.push("Confluence 스페이스 키를 입력하세요.");
+    const pageTitle = `[회의록] ${title}` + (when && when !== "(미기재)" ? ` (${when})` : "");
+    plan.confluence = {space: $("p-space").value.trim(), parent: $("p-parent").value.trim(), title: pageTitle};
+    lines.push(`• Confluence '${plan.confluence.space}' 스페이스에 페이지\n   ${pageTitle}`);
+  }
+  if (serviceAvailable("jira") && $("p-jira-on").checked) {
+    const items = [...document.querySelectorAll("#p-items tr[data-i]")].filter((tr) => tr.querySelector(".check").checked)
+      .map((tr) => {
+        const who = tr.querySelector(".who").value.trim();
+        const project = ((tr.querySelector(".proj") || {}).value || defaultProject()).trim().toUpperCase();
+        const user = userList(project).find((u) => u.name === who);  // 목록에서 고른 사람은 accountId로 정확히 지정
+        return {task: tr.querySelector(".task").value.trim(), project, assignee: who, assignee_id: user ? user.accountId : "",
+                due: normDate(tr.querySelector(".due").value)};
+      })
+      .filter((it) => it.task);
+    if (items.some((it) => !it.project)) problems.push("Jira 프로젝트가 비어 있는 줄이 있어요. 기본 프로젝트나 줄의 프로젝트를 넣어 주세요.");
+    if (!items.length) problems.push("Jira에 올릴 할 일을 하나 이상 체크하세요.");
+    plan.jira = {project: defaultProject(), issue_type: $("p-type").value, items};
+    const byProject = {};
+    items.forEach((it) => (byProject[it.project] = (byProject[it.project] || 0) + 1));
+    lines.push(`• Jira 일감 ${items.length}개 (` + Object.entries(byProject).map(([k, n]) => `${k} ${n}`).join(" · ") + ")");
+    items.forEach((it) => lines.push(`   - [${it.project}] ${it.task.slice(0, 38)}${it.assignee ? ` (담당 ${it.assignee})` : ""}`));
+  }
+  if (serviceAvailable("slack") && $("p-slack-on").checked) {
+    if (!$("p-channel").value.trim()) problems.push("Slack 채널을 입력하세요.");
+    plan.slack = {channel: $("p-channel").value.trim(), message: $("p-slack-msg").value.trim() || SLACK_NOTICE};
+    lines.push(`• Slack ${plan.slack.channel} 채널에 요약 메시지`);
+  }
+  if (serviceAvailable("gitlab") && $("p-gl-on").checked) {
+    const repo = $("p-gl-repo").value.trim();
+    const labels = $("p-gl-labels").value.split(",").map((s) => s.trim()).filter(Boolean);
+    if (!repo) problems.push("GitLab 저장소 주소를 입력하세요.");
+    else {
+      const st = await api.gitlab_token_state(repo);
+      if (st.error) problems.push(st.error);
+      else if (!st.saved) problems.push("GitLab 토큰이 저장돼 있지 않아요. ④ 화면에서 토큰을 저장하세요.");
+    }
+    plan.gitlab = {repo, labels};
+    if (!plan.jira) {  // Jira 없이 바로 옮길 때는 체크한 할 일을 넘긴다
+      plan.gitlab.items = [...document.querySelectorAll("#p-items tr[data-i]")].filter((tr) => tr.querySelector(".check").checked)
+        .map((tr) => ({task: tr.querySelector(".task").value.trim(), assignee: tr.querySelector(".who").value.trim(),
+                       due: normDate(tr.querySelector(".due").value)})).filter((it) => it.task);
+      if (!plan.gitlab.items.length) problems.push("GitLab에 올릴 할 일을 하나 이상 체크하세요.");
+    }
+    const n = plan.jira ? plan.jira.items.length : plan.gitlab.items.length;
+    lines.push(`• GitLab ${repo.replace(/^https?:\/\/[^/]+\//, "").replace(/\.git$/, "")} 에 이슈 ${n}개` +
+               (plan.jira ? " (만들어진 Jira 일감마다 1개)" : ""));
+  }
+  if (!Object.keys(plan).length) problems.push("연결된 도구에서 공유할 대상을 하나 이상 선택하세요.");
+  // 존재하지 않는 스페이스·프로젝트·채널로 올리는 실수를 막는다
+  if (plan.confluence) { const w = checkTarget("space", plan.confluence.space); if (w) problems.push(w); }
+  if (plan.jira) [...new Set(plan.jira.items.map((it) => it.project))].forEach((k) => { const w = checkTarget("project", k); if (w) problems.push(w); });
+  if (plan.slack) { const w = checkTarget("channel", plan.slack.channel); if (w) problems.push(w); }
+  if (!targets) lines.push("\n※ 스페이스·프로젝트·채널 목록을 아직 안 불러와서 키가 맞는지 확인하지 못했어요.");
+  if (problems.length) return alertBox("확인해 주세요", problems.join("\n"));
+  const ok = await modal("이렇게 공유할까요?", lines.join("\n") + "\n\n선택한 도구에 실제로 게시됩니다.",
+    [{label: "취소", value: false}, {label: "공유하기", value: true, primary: true}]);
+  if (!ok) return;
+  const settings = {conf_on: $("p-conf-on").checked, conf_space: $("p-space").value.trim(), conf_parent: $("p-parent").value.trim(),
+    jira_on: $("p-jira-on").checked, jira_project: $("p-project").value.trim(), jira_type: $("p-type").value,
+    slack_on: $("p-slack-on").checked, slack_channel: $("p-channel").value.trim(), slack_message: $("p-slack-msg").value.trim(),
+    gl_on: $("p-gl-on").checked, gitlab_repo: $("p-gl-repo").value.trim() || $("g-repo").value.trim(),
+    gitlab_labels: $("p-gl-labels").value.trim()};
+  const r = await api.start_publish({doc: docPath, plan, settings});
+  if (r.error) alertBox("확인해 주세요", r.error);
+};
+$("p-stop").onclick = () => api.stop("p");
+
+/* ---------- ④ Jira → GitLab ---------- */
+async function refreshToken() {
+  const repo = $("g-repo").value.trim();
+  shareConnections.gitlab = false; syncShareCards();
+  if (!repo) { $("p-gl-tag").innerHTML = ""; $("g-token-tag").innerHTML = `<span class="tag muted">저장소 주소를 넣어 주세요</span>`; return; }
+  const st = await api.gitlab_token_state(repo);
+  if ($("g-repo").value.trim() !== repo) return;
+  shareConnections.gitlab = !!st.saved && !st.error; syncShareCards();
+  const tag = st.error ? `<span class="tag err">${esc(st.error)}</span>`
+    : st.saved ? `<span class="tag ok">● 토큰 저장됨</span>` : `<span class="tag warn">● 토큰 없음</span>`;
+  $("g-token-tag").innerHTML = tag;
+  if ($("p-gl-repo").value.trim() === repo) $("p-gl-tag").innerHTML = tag;
+}
+// ③과 ④의 GitLab 저장소 칸은 같은 값을 쓴다
+$("p-gl-repo").addEventListener("change", () => { $("g-repo").value = $("p-gl-repo").value; refreshToken(); });
+$("g-repo").addEventListener("change", () => { $("p-gl-repo").value = $("g-repo").value; });
+$("g-repo").addEventListener("change", refreshToken);
+$("g-save").onclick = async () => {
+  const token = $("g-token").value.trim();
+  if (!token) return alertBox("토큰이 비어 있어요", "GitLab 액세스 토큰을 붙여 넣은 뒤 저장하세요.");
+  const r = await api.gitlab_save_token($("g-repo").value, token);
+  $("g-token").value = "";  // 저장한 뒤에는 화면에 남기지 않는다
+  if (r.error) return alertBox("저장하지 못했어요", r.error);
+  toast("토큰 저장됨", "Windows 자격 증명 관리자에 저장했어요.");
+  refreshToken(); $("g-check").click();
+};
+$("g-forget").onclick = async () => {
+  if (!await modal("토큰 지우기", "이 저장소 서버의 GitLab 토큰을 이 PC에서 지울까요?", [{label: "취소", value: false}, {label: "지우기", value: true, primary: true}])) return;
+  await api.gitlab_save_token($("g-repo").value, ""); refreshToken(); $("g-proj").innerHTML = "";
+};
+$("g-check").onclick = async () => {
+  $("g-proj").innerHTML = `<span class="tag muted">GitLab 연결 확인 중…</span>`;
+  const r = await api.gitlab_check($("g-repo").value);
+  $("g-proj").innerHTML = r.error ? `<span class="tag err">${esc(r.error)}</span>`
+    : `<b>${esc(r.project)}</b><span class="tag ok">● 연결됨</span><span class="tag muted">로그인: ${esc(r.user)}</span>` +
+      (r.issues_enabled === false ? `<span class="tag warn">이 프로젝트는 이슈 기능이 꺼져 있어요</span>` : "");
+};
+
+/* ---------- 연결 관리 (MCP) ---------- */
+const SETTINGS_STEPS = "claude.ai 접속 → 왼쪽 아래 프로필 → 설정(Settings) → 커넥터(Connectors)";
+const AUTH_TERMINAL = "· 터미널로: [터미널로 인증]을 누르면 검은 창에 claude가 떠요. 거기서 /mcp 입력 → 목록에서 이 커넥터 선택 → Authenticate → 브라우저에서 로그인·승인 → 창 닫기";
+const GUIDES = {
+  atlassian: {
+    color: "#1868db", letter: "A", title: "Atlassian (Jira · Confluence)",
+    connect: `1. ${SETTINGS_STEPS}\n2. 목록에서 Atlassian → [연결(Connect)] (이미 있으면 ··· → 다시 연결)\n3. 회사 Atlassian 계정으로 로그인\n4. 접근할 사이트로 회사 Atlassian 사이트 선택 → [수락(Accept)]\n5. 이 화면에서 [새로고침] → '연결됨'이면 끝\n\n${AUTH_TERMINAL}\n\n※ '관리자 승인 필요'가 뜨면 회사 Atlassian 관리자에게 Claude(Atlassian MCP) 앱 허용을 요청하세요.`,
+    disconnect: `1. ${SETTINGS_STEPS}\n2. Atlassian 옆 ··· → [연결 해제(Disconnect)]\n3. (완전히 끊으려면) Atlassian 계정 → 프로필 → 계정 설정 → 연결된 앱 → Claude 접근 취소\n4. 이 화면에서 [새로고침]`,
+  },
+  slack: {
+    color: "#611f69", letter: "S", title: "Slack",
+    connect: `1. ${SETTINGS_STEPS}\n2. [커넥터 둘러보기/추가] → Slack 검색 → [연결(Connect)]\n3. 회사 Slack 워크스페이스로 로그인 → [허용(Allow)]\n4. 이 화면에서 [새로고침] → '연결됨'이면 끝\n\n※ 회사 워크스페이스가 앱 설치를 막아 두었으면 Slack 관리자 승인이 필요해요.`,
+    disconnect: `1. ${SETTINGS_STEPS}\n2. Slack 옆 ··· → [연결 해제(Disconnect)]\n3. (완전히 끊으려면) Slack → 워크스페이스 설정 → 앱 관리 → Claude 제거\n4. 이 화면에서 [새로고침]`,
+  },
+  google: {
+    color: "#1a73e8", letter: "G", title: "Google (Drive · Gmail · Calendar)",
+    connect: `1. ${SETTINGS_STEPS}\n2. 원하는 Google 커넥터 → [연결(Connect)]\n3. Google 계정으로 로그인 → 권한 허용\n4. 이 화면에서 [새로고침]`,
+    disconnect: `1. ${SETTINGS_STEPS}\n2. 해당 커넥터 옆 ··· → [연결 해제]\n3. (완전히 끊으려면) Google 계정 → 보안 → 서드파티 앱 → Claude 접근 삭제`,
+  },
+  claudeai: {
+    color: "#c2410c", letter: "C", title: "claude.ai 커넥터",
+    connect: `1. ${SETTINGS_STEPS}\n2. 해당 커넥터 → [연결(Connect)] → 로그인·승인\n3. 이 화면에서 [새로고침]\n\n${AUTH_TERMINAL}`,
+    disconnect: `1. ${SETTINGS_STEPS}\n2. 해당 커넥터 옆 ··· → [연결 해제(Disconnect)]\n3. 이 화면에서 [새로고침]`,
+  },
+  local: {
+    color: "#475569", letter: "M", title: "직접 추가한 MCP 서버",
+    connect: `아래 'MCP 서버 직접 추가'에서 이름과 주소를 넣고 [추가하기]를 눌러요.\n로그인(OAuth)이 필요한 서버면 상태가 '인증 필요'로 나와요. 그때 [인증하기] → [터미널로 인증] 순서로 진행하세요.\n\n${AUTH_TERMINAL}`,
+    disconnect: `이 줄의 [삭제]를 누르면 이 PC의 Claude Code 설정에서 빠져요. (claude mcp remove)`,
+  },
+};
+const RECOMMENDED = [{name: "claude.ai Atlassian", key: "atlassian"}, {name: "claude.ai Slack", key: "slack"}];
+function guideKey(name) {
+  const n = name.toLowerCase();
+  if (n.includes("atlassian")) return "atlassian";
+  if (n.includes("slack")) return "slack";
+  if (/google|gmail|calendar/.test(n)) return "google";
+  return n.startsWith("claude.ai ") ? "claudeai" : "local";
+}
+const STATUS_TAG = {connected: ["ok", "● 연결됨"], needs_auth: ["warn", "● 인증 필요"], failed: ["err", "● 연결 실패"],
+  missing: ["muted", "○ 연결 안 됨"], unknown: ["muted", "? 알 수 없음"]};
+async function loadMcp() {
+  mcpLoaded = true;
+  $("mcp-list").innerHTML = `<div class="empty">불러오는 중… (10초쯤 걸려요)</div>`;
+  const r = await api.mcp_list();
+  if (r.error) { $("mcp-list").innerHTML = `<div class="empty">${esc(r.error)}</div>`; return; }
+  renderMcp(r.servers);
+}
+// 연결마다 '내가 등록한 곳'으로 가는 링크: ③에 설정한 스페이스·프로젝트·채널, 불러온 목록의 사이트 주소를 쓴다
+function serviceLinks(name) {
+  const n = name.toLowerCase(), t = targets || {};
+  const site = (t.site || "").replace(/\/+$/, "") || "https://home.atlassian.com";
+  if (n.includes("atlassian")) {
+    const links = [];
+    const space = $("p-space").value.trim(), project = $("p-project").value.trim();
+    links.push({label: "Confluence ↗", url: t.site && space ? `${site}/wiki/spaces/${encodeURIComponent(space)}` : (t.site ? `${site}/wiki` : site)});
+    links.push({label: "Jira ↗", url: t.site && project ? `${site}/browse/${encodeURIComponent(project)}` : (t.site ? `${site}/jira` : site)});
+    return links;
+  }
+  if (n.includes("slack")) {
+    const ch = $("p-channel").value.trim(), id = (t.channel_ids || {})[ch.startsWith("#") ? ch : "#" + ch];
+    const base = (t.slack_url || "").replace(/\/+$/, "");
+    return [{label: "Slack ↗", url: base && id ? `${base}/archives/${id}` : (base || "https://app.slack.com/client")}];
+  }
+  if (n.includes("gmail")) return [{label: "열기 ↗", url: "https://mail.google.com"}];
+  if (n.includes("calendar")) return [{label: "열기 ↗", url: "https://calendar.google.com"}];
+  if (n.includes("drive")) return [{label: "열기 ↗", url: "https://drive.google.com"}];
+  if (n.includes("claude docs")) return [{label: "열기 ↗", url: "https://claude.ai"}];
+  return [];
+}
+function gitlabWebUrl() {
+  const repo = $("g-repo").value.trim().replace(/\.git$/, "").replace(/\/+$/, "");
+  return /^https?:\/\//.test(repo) ? repo : "";
+}
+function renderMcp(servers) {
+  showConnectors({atlassian: (servers.find(s => s.name === "claude.ai Atlassian") || {}).status, slack: (servers.find(s => s.name === "claude.ai Slack") || {}).status});
+  const rows = [...servers];
+  RECOMMENDED.forEach((rec) => { if (!rows.some((s) => s.name === rec.name)) rows.push({name: rec.name, endpoint: "claude.ai 계정에 아직 없음", status: "missing", kind: "claudeai"}); });
+  const order = {needs_auth: 0, missing: 1, failed: 2, connected: 3, unknown: 4};
+  rows.sort((a, b) => (order[a.status] - order[b.status]) || a.name.localeCompare(b.name));
+  const need = rows.filter((s) => s.status === "needs_auth" || s.status === "failed").length;
+  $("conn-badge").textContent = need; $("conn-badge").classList.toggle("show", need > 0);
+  $("mcp-list").innerHTML = rows.map((s, i) => {
+    const g = GUIDES[guideKey(s.name)];
+    const [tone, word] = STATUS_TAG[s.status] || STATUS_TAG.unknown;
+    const display = s.name.replace(/^claude\.ai /, "");
+    let acts = "";
+    if (s.kind === "local") acts = `<button class="btn sm" data-act="auth" data-i="${i}">인증하기</button><button class="btn sm" data-act="remove" data-i="${i}">삭제</button>`;
+    else if (s.status === "connected") acts = `<button class="btn sm" data-act="disconnect" data-i="${i}">연결 해제</button>`;
+    else if (s.status === "missing") acts = `<button class="btn sm" data-act="connect" data-i="${i}">연결하기</button>`;
+    else acts = `<button class="btn sm" data-act="auth" data-i="${i}">인증하기</button>`;
+    acts += `<button class="btn sm ghost" data-act="guide" data-i="${i}">연결 방법</button>`;
+    if (s.status === "connected")
+      acts = serviceLinks(s.name).map((l) => `<button class="btn sm" data-url="${esc(l.url)}" title="${esc(l.url)}">${esc(l.label)}</button>`).join("") + acts;
+    return `<div class="mcp-row"><div class="mcp-ico" style="background:${g.color}">${g.letter}</div>
+      <div><div class="mcp-name">${esc(display)} <span class="tag muted" style="margin-left:6px">${s.kind === "local" ? "직접 추가" : "claude.ai"}</span></div>
+        <div class="mcp-end">${esc(s.endpoint)}</div></div>
+      <span class="tag ${tone}">${word}</span><div class="mcp-acts">${acts}</div></div>`;
+  }).join("");
+  $("mcp-list").querySelectorAll("[data-act]").forEach((b) => (b.onclick = () => mcpAction(b.dataset.act, rows[+b.dataset.i])));
+  $("mcp-list").querySelectorAll("[data-url]").forEach((b) => (b.onclick = () => api.open_url(b.dataset.url)));
+}
+async function mcpAction(act, s) {
+  const g = GUIDES[guideKey(s.name)];
+  const display = s.name.replace(/^claude\.ai /, "");
+  if (act === "guide") {
+    return modal(`${g.title} 연결 방법`, `■ 연결하기\n${g.connect}\n\n■ 연결 해제\n${g.disconnect}`, [{label: "닫기", value: 0, primary: true}]);
+  }
+  if (act === "remove") {
+    if (!await modal("MCP 서버 삭제", `'${display}'를 이 PC의 Claude Code 설정에서 뺄까요?`, [{label: "취소", value: false}, {label: "삭제", value: true, primary: true}])) return;
+    const r = await api.mcp_remove(s.name);
+    if (r.error) return alertBox("삭제하지 못했어요", r.error);
+    toast("삭제했어요", display); return renderMcp(r.servers);
+  }
+  if (act === "disconnect") {
+    const a = await modal(`${display} 연결 해제`, g.disconnect, [{label: "닫기", value: null}, {label: "claude.ai 설정 열기", value: "web", primary: true}]);
+    if (a === "web") api.open_url(await api.mcp_settings_url());
+    return;
+  }
+  // connect · auth
+  const buttons = [{label: "닫기", value: null}];
+  if (s.kind !== "local" && act === "auth") buttons.push({label: "터미널로 인증", value: "term"});
+  if (s.kind === "local") buttons.push({label: "터미널로 인증", value: "term"});
+  else buttons.push({label: "claude.ai에서 연결", value: "web", primary: true});
+  const a = await modal(`${display} ${act === "connect" ? "연결하기" : "인증하기"}`, g.connect + "\n\n끝나면 [새로고침]을 눌러 주세요.", buttons);
+  if (a === "web") api.open_url(await api.mcp_settings_url());
+  if (a === "term") { const r = await api.mcp_auth_console(); if (r.error) alertBox("창을 열지 못했어요", r.error); else toast("인증 창을 열었어요", "/mcp 를 입력하고 이 커넥터를 골라 Authenticate 하세요."); }
+}
+$("mcp-refresh").onclick = loadMcp;
+$("g-open").onclick = () => { const u = gitlabWebUrl(); if (u) api.open_url(u); else alertBox("저장소 주소", "GitLab 저장소 주소를 먼저 넣어 주세요."); };
+$("mcp-open-settings").onclick = async () => api.open_url(await api.mcp_settings_url());
+$("mcp-add-help").onclick = () => modal("MCP 서버 직접 추가", GUIDES.local.connect + "\n\n· 이름: 영문으로 짧게 (예: sentry)\n· 주소: 서비스가 알려 주는 MCP 주소 (보통 https://…/mcp)\n· 전송 방식: 대부분 HTTP, 오래된 서버는 SSE\n· 헤더: 서비스가 API 키를 헤더로 요구할 때만 (예: Authorization: Bearer 키)\n\n추가된 서버는 회의록 정리·공유 때 Claude가 쓸 수 있게 돼요.", [{label: "닫기", value: 0, primary: true}]);
+$("mcp-add").onclick = async () => {
+  const name = $("mcp-name").value.trim(), url = $("mcp-url").value.trim();
+  if (!name || !url) return alertBox("확인해 주세요", "이름과 주소를 모두 넣어 주세요.");
+  $("mcp-list").innerHTML = `<div class="empty">추가하는 중…</div>`;
+  const r = await api.mcp_add(name, url, $("mcp-transport").value, $("mcp-header").value.trim());
+  $("mcp-header").value = "";
+  if (r.error) { alertBox("추가하지 못했어요", r.error); return loadMcp(); }
+  $("mcp-name").value = ""; $("mcp-url").value = "";
+  toast("MCP 서버를 추가했어요", name); renderMcp(r.servers);
+};
+
+/* ---------- 파일 끌어다 놓기 ---------- */
+const MEDIA = ["mp3", "wav", "m4a", "flac", "ogg", "aac", "wma", "mp4", "mkv", "mov", "avi", "webm"];
+const DOCS = ["pdf", "docx", "hwpx", "md"];
+const currentPage = () => (document.querySelector(".page.active") || {id: "page-make"}).id.replace("page-", "");
+const DROP_HINT = {
+  make: ["음성 파일 · 대본 · 양식을 놓으세요", "mp3 · wav · m4a · mp4 → 음성·영상 파일 · .txt → 대본 · .hwpx/.docx/.pdf/.md → 양식"],
+  publish: ["회의록을 놓으세요", ".json · .pdf · .docx · .hwpx 회의록"],
+};
+let dragDepth = 0, dragTimer = null;
+function showDrop(on) {
+  const [t, s] = DROP_HINT[currentPage()] || ["파일을 놓으세요", "음성·영상, 대본, 회의록 파일"];
+  $("dz-title").textContent = t; $("dz-text").textContent = s;
+  $("dropzone").classList.toggle("show", on);
+  if (!on) dragDepth = 0;
+}
+// 안내가 남아 화면을 가리는 일이 없게: 끄는 중(dragover)이 0.4초 끊기면 자동으로 닫는다
+function keepDrop() { clearTimeout(dragTimer); dragTimer = setTimeout(() => showDrop(false), 400); }
+window.addEventListener("dragenter", (e) => { e.preventDefault(); dragDepth++; showDrop(true); keepDrop(); }, true);
+window.addEventListener("dragleave", () => { dragDepth = Math.max(0, dragDepth - 1); if (!dragDepth) showDrop(false); }, true);
+window.addEventListener("dragover", (e) => { e.preventDefault(); e.dataTransfer.dropEffect = "copy"; keepDrop(); }, true);
+window.addEventListener("drop", (e) => { e.preventDefault(); clearTimeout(dragTimer); showDrop(false); }, true);
+
+function routeDrop(paths) {
+  showDrop(false);
+  const page = currentPage(), placed = [], skipped = [];
+  const media = [];
+  let txt = "";
+  for (const p of paths) {
+    const name = p.split(/[\\/]/).pop(), ext = (name.split(".").pop() || "").toLowerCase();
+    if (MEDIA.includes(ext)) media.push(p);
+    else if (ext === "txt" && page !== "publish") { txt = p; placed.push(`대본 ← ${name}`); }
+    else if (ext === "json" || (["txt", ...DOCS].includes(ext) && page === "publish")) { setDoc(p); placed.push(`회의록 ← ${name}`); if (page !== "publish") go("publish"); }
+    else if (DOCS.includes(ext) && page === "make") { $("m-template").value = p; syncTemplateClear(); placed.push(`양식 ← ${name}`); }
+    else if (DOCS.includes(ext)) { setDoc(p); placed.push(`회의록 ← ${name}`); go("publish"); }
+    else skipped.push(name);
+  }
+  if (txt) {  // 대본은 하나만: 녹음 칸을 대본으로 바꾼다
+    $("t-files").value = txt; renderPills(); syncRunLabel();
+    if (page !== "make") go("make");
+  } else if (media.length) {
+    const cur = pickedFiles().filter((f) => !isTxt(f));
+    $("t-files").value = [...new Set([...cur, ...media])].join("; ");
+    renderPills(); syncRunLabel(); placed.push(`음성·영상 ${media.length}개`);
+    if (page !== "make") go("make");
+  }
+  if (placed.length) toast("파일을 넣었어요", placed.join(" · "));
+  if (skipped.length) toast("넣을 수 없는 파일", skipped.join(", "), {error: true});
+  if (!paths.length) toast("파일 경로를 읽지 못했어요", "탐색기에서 파일을 끌어다 놓아 주세요.", {error: true});
+}
+
+/* 단계가 끝나면 실행 영역 아래에 '다음 단계' 버튼을 보여 준다 (누를 때만 넘어간다) */
+function showNext(job, text, buttons) {
+  const box = $(panel(job) + "-next");
+  if (!box) return;
+  box.innerHTML = `<span class="next-text">${esc(text)}</span>` +
+    buttons.map((b, i) => `<button class="btn ${b.primary ? "go" : ""}" data-n="${i}">${esc(b.label)}</button>`).join("");
+  box.querySelectorAll("button").forEach((el) => (el.onclick = () => { box.classList.remove("show"); buttons[+el.dataset.n].run(); }));
+  box.classList.add("show");
+}
+function hideNext(job) { const box = $(panel(job) + "-next"); if (box) box.classList.remove("show"); }
+
+/* 화자별로 실제 이름을 넣는 칸 ("화자1" → "김철수").
+   doc(회의록 JSON)이 있으면 [적용하기]가 대본과 이미 만든 회의록에 함께 반영한다. 화자 수를 돌려준다. */
+async function showSpeakers(txt, doc = null) {
+  const box = $("t-spk");
+  const r = await api.list_speakers(txt);
+  const list = (r && r.speakers) || [];
+  if (list.length < (doc ? 2 : 1)) { box.classList.remove("show"); return list.length; }
+  const hint = doc ? "회의록까지 만들었어요. 누가 말했는지 보고 이름을 적은 뒤 [적용하기]를 누르면 대본과 회의록에 함께 반영돼요."
+                   : "누가 말했는지 보고 이름을 적어 주세요. 비워 두면 그대로예요. 같은 사람이면 같은 이름을 적으면 합쳐져요.";
+  box.innerHTML = `<div class="spk-head"><b>화자 이름</b><span>${esc(hint)}</span><button class="btn go" id="spk-apply">적용하기</button></div>` +
+    list.map((s, i) => `<div class="spk-row"><div class="spk-tag" title="${esc(s.name)}">${esc(s.name)}</div>
+      <input class="input" data-i="${i}" placeholder="이름 (예: 김철수)">
+      <div class="spk-said">${s.samples.map((t) => `<div title="${esc(t)}">“${esc(t)}”</div>`).join("")}<small>${s.count}번 말함</small></div></div>`).join("");
+  box.classList.add("show");
+  $("spk-apply").onclick = async () => {
+    const mapping = {};
+    box.querySelectorAll("input[data-i]").forEach((el) => { if (el.value.trim()) mapping[list[+el.dataset.i].name] = el.value.trim(); });
+    if (!Object.keys(mapping).length) return toast("바꿀 이름이 없어요", "이름 칸에 적은 뒤 눌러 주세요.", {error: true});
+    const res = doc ? await api.apply_speaker_names(txt, mapping, doc) : await api.rename_speakers(txt, mapping);
+    if (res.error) return toast("이름을 바꾸지 못했어요", res.error, {error: true});
+    toast(doc ? "대본과 회의록에 이름을 적용했어요" : "화자 이름을 바꿨어요",
+          Object.entries(mapping).map(([a, b]) => `${a} → ${b}`).join(", "));
+    if (doc) setDoc(doc);   // 바뀐 담당자 이름으로 공유 화면의 할 일도 다시 읽는다
+    showSpeakers(txt, doc);  // 바뀐 이름으로 다시 보여 준다 (또 고칠 수 있게)
+  };
+  return list.length;
+}
+
+function downloadFile(path) {
+  const a = document.createElement("a");
+  a.href = "/download?path=" + encodeURIComponent(path);
+  a.download = path.split(/[\\/]/).pop();
+  document.body.appendChild(a);
+  a.click();
+  a.remove();
+}
+
+/* ---------- 파이썬 → 화면 이벤트 ---------- */
+// 받아쓰기 → 회의록으로 바로 이어지는 경우, 전체를 "회의록 만드는 중…" 하나로 보여 주고
+// 퍼센트도 0%로 리셋하지 않고 이어서 올라가게 한다 (받아쓰기 133.7초, 회의록 97.1초 비율 기준 분배)
+const COMBO_SPLIT = 0.55;
+function comboProgress(j, v) {
+  if (!(flow && flow.minutes)) return v;
+  return j === "m" ? COMBO_SPLIT + v * (1 - COMBO_SPLIT) : v * COMBO_SPLIT;
+}
+const jobStart = {};  // 화면(panel)별 시작 시각. 받아쓰기→회의록으로 이어지면 받아쓰기 시작부터 잰다
+function fmtDur(sec) {
+  sec = Math.max(0, Math.round(sec));
+  if (sec < 60) return `${sec}초`;
+  const m = Math.floor(sec / 60), s = sec % 60;
+  if (m < 60) return m < 10 && s ? `${m}분 ${s}초` : `${m}분`;
+  return `${Math.floor(m / 60)}시간 ${m % 60}분`;
+}
+function fmtUsage(u) {
+  if (!u) return "";
+  const n = (x) => Number(x || 0).toLocaleString("ko-KR");
+  return `토큰 입력 ${n(u.input)} · 출력 ${n(u.output)}` + (u.cost_usd ? ` (API 요금 기준 약 $${Number(u.cost_usd).toFixed(3)})` : "");
+}
+function tookText(j) {
+  const t0 = jobStart[panel(j)];
+  return t0 ? `${fmtDur((Date.now() - t0) / 1000)} 걸림` : "";
+}
+// 받아쓰기는 진행률이 실제 처리량이라 남은 시간을 어림하고, Claude 작업은 진행률이 '예상 도구 호출 수'로 어림한 값이라
+// 금방 97%에 붙어 "1초 남음"이 계속 뜬다. 그래서 Claude 작업은 지난 시간만 보여 준다. 1초마다 다시 그린다.
+const jobRun = {};  // 화면(panel) → {j, p}
+function showEta(j, p) { jobRun[panel(j)] = {j, p}; renderEta(panel(j)); }
+function renderEta(pn) {
+  const r = jobRun[pn], t0 = jobStart[pn];
+  if (!r || !t0) return;
+  const el = (Date.now() - t0) / 1000;
+  let extra = `${fmtDur(el)} 지남`;
+  if (r.j === "t" && r.p >= 0.03 && el >= 5) {
+    const left = el * (1 - r.p) / r.p;
+    extra = left < 3 ? "곧 끝나요" : `약 ${fmtDur(left)} 남음`;
+  }
+  $(pn + "-status").querySelector(".pct").textContent = `${Math.round(r.p * 100)}% · ${extra}`;
+}
+setInterval(() => Object.keys(jobRun).forEach(renderEta), 1000);
+function onJob(d) {
+  const j = d.job;
+  const combo = j === "m" || (flow && flow.minutes);
+  if (d.kind === "start" && !(j === "m" && flow && flow.minutes && jobStart[panel(j)])) jobStart[panel(j)] = Date.now();
+  if (d.kind === "start") jobRun[panel(j)] = {j, p: comboProgress(j, 0)};
+  else if (d.kind === "done" || d.kind === "error" || d.kind === "stopped") { delete jobRun[panel(j)]; statsDirty = true; }
+  // 실행 버튼에 지금 하는 일을 보여 준다 (끝나면 원래 이름으로)
+  if (panel(j) === "t") {
+    if (d.kind === "start") $("t-run-label").textContent = combo ? "회의록 만드는 중…" : "받아쓰는 중…";
+    else if (d.kind === "done" || d.kind === "stopped" || d.kind === "error") syncRunLabel();
+  }
+  if (d.kind === "start") { activeJob = j; hideNext(j); if (panel(j) === "t") $("t-spk").classList.remove("show"); setRunning(j, true);
+    const p0 = comboProgress(j, 0);
+    setProgress(j, p0);
+    setStatus(j, (j === "m" ? "회의록 정리 · " : "") + d.text, "", Math.round(p0 * 100) + "%");
+    log(j, `──────── ${new Date().toLocaleTimeString()} ${j === "t" ? "받아쓰기" : j === "m" ? "회의록 정리" : ""} 시작`, "sep"); }
+  else if (d.kind === "progress") { const p = comboProgress(j, d.value); setProgress(j, p); showEta(j, p); }
+  else if (d.kind === "status") setStatus(j, (j === "m" ? "회의록 정리 · " : j === "t" && flow && flow.minutes ? "받아쓰기 · " : "") + d.text);
+  else if (d.kind === "log") log(j, d.text);
+  else if (d.kind === "stopped") { flow = null; setRunning(j, false); setProgress(j, 0); setStatus(j, "중지했어요.", "warn", ""); }
+  else if (d.kind === "error") { flow = null; setRunning(j, false); setStatus(j, "오류가 발생했어요. 진행 기록을 확인하세요.", "err", "");
+    alertBox("오류", d.text); }
+  else if (d.kind === "done") {
+    setRunning(j, false); setProgress(j, comboProgress(j, 1)); setNavDone(j);
+    if (j === "t") {
+      const txt = d.outputs.length ? d.outputs[d.outputs.length - 1] : "";
+      const cont = flow && flow.minutes;
+      if (txt) curTxt = txt;
+      if (cont && txt) {  // 회의록까지: 바로 이어서 정리하고, 화자 이름은 다 만든 뒤 대본·회의록에 함께 적용한다
+        if (d.outputs.length > 1) toast("받아쓰기 완료", `${d.outputs.length}개 중 마지막 파일로 회의록을 만들어요.`);
+        setStatus(j, "받아쓰기 끝! 이어서 회의록을 만들어요.", "ok");
+        startMinutes();
+        return;
+      }
+      flow = null;
+      setStatus(j, `완료! 대본을 저장했어요. (${tookText(j)})`, "ok");
+      if (txt) showSpeakers(txt);
+      toast("받아쓰기 완료", `${d.outputs.length}개 파일 · ${tookText(j)}`);
+      if (txt) showNext("t", "대본이 준비됐어요. 이어서 할 일을 고르세요.", [
+        ...d.outputs.map((p) => ({label: "⬇ " + p.split(/[\\/]/).pop(), run: () => downloadFile(p)})),
+        {label: "바로 공유하기 →", run: () => { go("publish"); setDoc(txt); }},           // ②에서 대본을 회의록으로 정리해 올린다
+        {label: "문서 만들기 →", primary: true, run: async () => { $("t-spk").classList.remove("show"); personalMode("minutes", true); if (await readyForMinutes()) startMinutes(); }},
+      ]);
+    } else if (j === "m") {
+      flow = null;
+      const files = d.outputs.filter((p) => !p.endsWith(".json")).map((p) => p.split(/[\\/]/).pop());
+      const extra = [tookText(j), fmtUsage(d.usage)].filter(Boolean).join(" · ");
+      setStatus(j, `완료! ${files.join(", ")}` + (extra ? ` (${extra})` : ""), "ok");
+      const data = d.outputs.find((p) => p.endsWith(".json"));
+      if (data) setDoc(data);
+      if (data && curTxt) showSpeakers(curTxt, data);  // 화자 이름을 적고 [적용하기] → 대본·회의록에 함께 반영
+      toast("회의록 완료", [files.join(", "), extra].filter(Boolean).join("\n"));
+      if (d.usage) log(j, `이 회의록에 쓴 ${fmtUsage(d.usage)}`);
+      showNext("m", "회의록이 준비됐어요. 공유할 곳을 확인하고 올리면 돼요.", [
+        ...d.outputs.filter((p) => !p.endsWith(".json")).map((p) => ({label: "⬇ " + p.split(/[\\/]/).pop(), run: () => downloadFile(p)})),
+        {label: "공유하기 →", primary: true, run: () => go("publish")},
+      ]);
+    } else if (j === "p") {
+      if (d.targets !== undefined) {
+        if (d.targets) { applyTargets(d.targets); setStatus(j, "목록을 불러왔어요. 입력칸을 누르면 골라 쓸 수 있어요.", "ok"); }
+        else setStatus(j, "목록을 읽지 못했어요. 진행 기록을 확인하세요.", "err");
+        setProgress(j, 0); $("st-" + j).className = "state"; $("st-" + j).textContent = "";
+      }
+      else if (d.imported) {
+        const extra = [tookText(j), fmtUsage(d.usage)].filter(Boolean).join(" · ");
+        setStatus(j, "문서를 읽었어요. 할 일을 확인하세요." + (extra ? ` (${extra})` : ""), "ok"); setDoc(d.imported);
+      }
+      else {
+        const extra = [tookText(j), fmtUsage(d.usage)].filter(Boolean).join(" · ");
+        setStatus(j, "공유 끝!" + (extra ? ` (${extra})` : ""), "ok");
+        alertBox("공유 결과", [...(d.summary || []), ...(extra ? ["", extra] : [])].join("\n"));
+      }
+    }
+  }
+}
+window.App = {
+  onEvent(evt, d) {
+    if (evt === "job") onJob(d);
+    else if (evt === "claude") { personalClaudePending = !!d.pending; showClaude(d); personalUpdateEngineStatus(); personalEnforceSingleEngine("claude", d); }
+    else if (evt === "codex") personalShowCodex(d);
+    else if (evt === "connectors") showConnectors(d);
+    else if (evt === "drop") routeDrop(d.paths || []);
+  },
+  go, setDoc, routeDrop, setRunning, setProgress, curTxt: () => curTxt,
+};
+
+/* ---------- 시작 ---------- */
+window.addEventListener("pywebviewready", async () => {
+  api = window.pywebview.api;
+  const init = await api.init();
+  const s = init.settings || {};
+  $("t-lang").innerHTML = init.languages.map((l) => `<option>${esc(l)}</option>`).join("");
+  $("t-lang").value = s.language || "한국어";
+  $("t-model").value = s.model || "large-v3-turbo";
+  showModelNote();
+  $("t-out").value = s.output_dir || init.output_dir || init.home + "\\Documents";
+  $("t-diarize").checked = s.diarize !== false;
+  $("t-speakers").value = s.speakers || "자동";
+  $("m-on").checked = s.make_minutes !== false;
+  $("m-template").value = s.minutes_template || "";
+  personalInitEngines(init);
+  $("m-model").value = s.minutes_engine === "codex" ? "" : s.minutes_model || "";
+  $("m-glossary").value = s.minutes_glossary || "";
+  syncRunLabel();
+  const fm = s.minutes_formats || ["pdf", "hwpx"];
+  document.querySelectorAll(".chip input").forEach((c) => (c.checked = fm.includes(c.value)));
+  if (init.default_template) $("m-template").placeholder = "선택하지 않으면 기본 양식을 사용합니다";
+  syncTemplateClear();
+  syncMoreSum();
+  $("p-conf-on").checked = s.conf_on !== false; $("p-space").value = s.conf_space || ""; $("p-parent").value = s.conf_parent || "";
+  $("p-jira-on").checked = s.jira_on !== false; $("p-project").value = s.jira_project || ""; $("p-type").value = s.jira_type || "작업";
+  $("p-slack-on").checked = !!s.slack_on; $("p-channel").value = s.slack_channel || "";
+  $("p-slack-msg").value = s.slack_message || SLACK_NOTICE;
+  applyTargets(s.atl_targets);
+  $("g-repo").value = s.gitlab_repo || "";
+  $("p-gl-on").checked = !!s.gl_on; $("p-gl-repo").value = $("g-repo").value; $("p-gl-labels").value = s.gitlab_labels ?? "jira";
+  refreshToken();
+  // 회의 종류: 저장된 게 없으면 지금 설정을 첫 종류 '기본 회의'로 만든다
+  presets = s.share_presets || {};
+  if (!Object.keys(presets).length) { presets["기본 회의"] = collectShare(); }
+  const last = presets[s.share_preset_last] ? s.share_preset_last : Object.keys(presets)[0];
+  renderPresets(last); applyShare(presets[last]); savePresets();
+});
+</script>
+<script src="ui-polish.js"></script>
+<script src="personal-ui.js?v=7"></script>
+<script src="web_shim.js"></script>
+</body>
+</html>

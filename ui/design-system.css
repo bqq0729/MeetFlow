@@ -1,0 +1,87 @@
+/* Common page geometry and component sizing. Keep page-specific overrides out. */
+:root{--workspace-width:1800px;--page-title-size:30px;--body-size:15px;--label-size:14px;--support-size:13px;--panel-padding:24px;--panel-gap:20px;--panel-radius:14px}
+html,body{height:auto;min-height:100%;font-size:var(--body-size);background:#f4f2ed}
+.app{height:auto;min-height:100dvh;align-items:start}
+.side{position:sticky;top:0;height:100dvh;overflow-y:auto}
+main{height:auto;min-height:100dvh;overflow:visible;padding:0 36px 36px}
+.page,#page-guide,#page-make,#page-compare,.workspace-bar,.workspace-help{width:100%;max-width:var(--workspace-width)!important;margin-left:0;margin-right:auto}
+main>.workspace-bar,main>.workspace-help{max-width:var(--workspace-width)!important}
+.workspace-bar{height:70px;min-height:70px;margin-bottom:26px}
+.page-head,.home-heading{margin:0 0 24px;min-height:102px;display:flex;flex-direction:column;align-items:flex-start;justify-content:center;gap:0}
+.page-head.editor-heading{flex-direction:row;align-items:center;justify-content:space-between}
+.home-heading{position:relative;padding-right:160px}
+.home-heading>.home-date{position:absolute;right:0;bottom:7px}
+.page-head h1,.home-heading h1{font-size:var(--page-title-size);font-weight:650;line-height:1.4;letter-spacing:-.9px;margin:0 0 9px}
+.page-head p,.home-heading p,#page-guide .home-heading p{font-size:var(--body-size);line-height:1.85;color:#5c6956;margin:0}
+.page-head .eyebrow,.home-heading .eyebrow,.editor-heading .eyebrow{display:block;font-size:12px;line-height:1.6;letter-spacing:1.5px;margin-bottom:9px;color:#a25836}
+.card,.connections-ai-panel,.tool-card{border-radius:var(--panel-radius);padding:var(--panel-padding);border-color:#dce0d3;background:#fffefa}
+.card{margin-bottom:var(--panel-gap)}
+.card-head{margin-bottom:18px;gap:10px}.card-head h3{font-size:17px;line-height:1.5;font-weight:650}
+.input,select{height:44px;min-height:44px;font-size:15px;border-radius:8px}
+.field>label,#t-more label,.connections-layout .field>label{font-size:14px;line-height:1.7;color:#4c5b44}
+.field{gap:12px;margin:17px 0}
+.btn,.btn-primary,.btn.go,.run-row>.btn-primary{height:42px;min-height:42px;font-size:14px;line-height:1.4;border-radius:8px;padding:10px 16px;white-space:nowrap;flex:none}
+.btn.sm{height:35px;min-height:35px;font-size:13px;padding:7px 12px}
+.help,.field-hint,.account-note,.connections-layout .help,.connections-layout .account-note{font-size:13px;line-height:1.85;color:#627255}
+.section-label{margin:22px 0 15px}.section-label h2,#page-guide .section-label h2{font-size:17px;line-height:1.5;font-weight:650}.section-label>span{font-size:12px;color:#66775a}
+.upload-banner{margin:calc(-1 * var(--panel-padding)) calc(-1 * var(--panel-padding)) 22px;padding:20px var(--panel-padding);border-radius:14px 14px 0 0}
+.upload-banner h2{font-size:17px;line-height:1.5}.upload-banner p{font-size:14px;line-height:1.85;color:#5f7053}
+.mode-tabs{margin-bottom:20px}.mode-tab{min-height:42px;font-size:14px}.mode-tab small{font-size:12px}
+.service-grid,.grid2,.tool-grid,.connections-layout{gap:var(--panel-gap)}
+.home-bottom{gap:var(--panel-gap)}
+.make-workspace{display:grid;grid-template-columns:minmax(0,1fr) 320px;gap:var(--panel-gap);align-items:start}
+.make-workspace>.card{min-width:0;margin:0}
+.work-guide{margin:0;border:1px solid #d7decd;border-radius:14px;background:#ebeee4;min-width:0;overflow:hidden}
+.work-guide>summary{font-size:17px;font-weight:650;color:#435b39;line-height:1.5;padding:20px 22px;cursor:pointer;list-style:none}
+.work-guide>summary::-webkit-details-marker{display:none}
+.work-guide>summary:after{content:'+';float:right;font-size:18px;color:#7b8b6b;font-weight:400}
+.work-guide[open]>summary:after{content:'−'}
+.work-guide-body{padding:0 22px 22px}
+.work-guide-intro{font-size:14px;line-height:1.85;color:#5c7150;margin:0 0 19px}
+.work-guide ol{list-style:none;margin:0;padding:0;display:grid;gap:16px}
+.work-guide li{display:flex;gap:12px;align-items:flex-start;font-size:14px;line-height:1.8;color:#425b36}
+.work-guide li>span{width:25px;height:25px;border:1px solid #c7d0b8;border-radius:50%;display:grid;place-items:center;flex:none;font-size:12px;color:#6a805a;background:#f5f7ef}
+.work-guide li b{display:block;font-size:14px;font-weight:600}.work-guide li small{display:block;font-size:13px;color:#627651;margin-top:2px;line-height:1.75}
+.work-guide-output{border-top:1px solid #ccd5be;margin-top:21px;padding-top:16px}
+.work-guide-output b{display:block;font-size:13px;color:#60734e}.work-guide-output p{font-size:14px;color:#415b34;line-height:1.85;margin:5px 0 0;overflow-wrap:anywhere}
+.work-guide-note{font-size:13px;color:#687c56;line-height:1.85;margin:17px 0 0}
+.connections-layout>.card,.connections-layout>.connections-ai-panel{height:auto;min-height:0}
+.connections-layout{align-items:start}
+.connections-ai-panel>.section-label{margin:0 0 17px}
+.cost-views{display:flex;gap:7px;flex-wrap:wrap;margin:19px 0}
+.cost-views button{font-size:14px;padding:8px 13px;border:1px solid #cad2bc;border-radius:7px;color:#61734e;background:#f4f6ee;min-height:38px}
+.cost-views button.active{background:#dfe7d2;color:#3b5730;border-color:#acbd97}
+.price-cards{margin:0 0 18px}.comparison-panel>p{font-size:15px}
+@media(min-width:1800px){main{padding-left:44px;padding-right:44px}}
+@media(max-width:1279px){.connections-layout{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:1199px){.make-workspace{grid-template-columns:minmax(0,1fr)}.work-guide{grid-row:1}.work-guide>summary{padding:15px 20px;font-size:15px}.work-guide-body{padding:0 20px 20px}.work-guide ol{grid-template-columns:repeat(3,minmax(0,1fr));gap:14px}}
+@media(max-width:800px){main{padding:0 24px 30px}.page-head,.home-heading{min-height:98px}.home-heading{padding-right:0}.home-heading>.home-date{display:none}.work-guide ol{grid-template-columns:minmax(0,1fr)}.home-bottom{gap:16px}}
+@media(max-width:560px){:root{--page-title-size:26px;--panel-padding:20px;--panel-gap:16px}.side{position:relative;top:auto;height:auto;overflow:visible}main{padding:0 18px 26px;min-height:0}.workspace-bar{height:60px;min-height:60px;margin-bottom:18px}.page-head,.home-heading{min-height:0;margin:22px 0}.page-head h1,.home-heading h1{font-size:26px;line-height:1.45}.page-head p,.home-heading p,#page-guide .home-heading p{font-size:14px;line-height:1.85}.page-head .eyebrow,.home-heading .eyebrow{font-size:11px}.page-head.editor-heading{display:block}.editor-index{display:none}.input,select{height:44px;font-size:15px}.run-row>.btn-primary{min-width:125px;font-size:14px;padding:10px 13px}.run-row>.btn-stop{font-size:13px}.mode-tab{font-size:13px;padding:10px 8px}.upload-banner h2{font-size:16px}.upload-banner p,#page-make[data-mode='transcript'] .upload-banner p{font-size:14px}.card-head h3{font-size:17px}.work-guide li,.work-guide-intro{font-size:14px}.work-guide-body{padding:0 18px 18px}.comparison-tabs button{font-size:13px}.cost-views button{font-size:13px}.tool-card>small{font-size:11px}}
+
+/* Keep document scrolling available whenever content exceeds the viewport. */
+html{height:auto;overflow-x:hidden;overflow-y:auto;scrollbar-gutter:stable}
+body{height:auto;overflow:visible}
+.app{height:auto;grid-template-rows:auto;overflow:visible}
+.app>main{height:auto;min-height:100dvh;overflow:visible}
+
+/* Equal card geometry; growing collections scroll without growing the grid row. */
+.connections-layout{grid-template-columns:repeat(2,minmax(0,1fr));align-items:stretch}
+.connections-layout>.card,.connections-layout>.connections-ai-panel{align-self:stretch;height:auto;margin:0;min-width:0}
+.connections-mcp-card{display:flex;flex-direction:column;min-height:0}
+.connections-mcp-card>.card-head{flex:none}
+.connections-mcp-card>.help{margin-top:auto!important;padding-top:12px}
+#mcp-list{max-height:260px;overflow-y:auto;overflow-x:hidden;scrollbar-gutter:stable;padding-right:6px;min-height:0}
+#mcp-list>.mcp-row{flex-shrink:0}
+.stat-table-wrap{max-height:360px;overflow:auto;scrollbar-gutter:stable}
+.stat-table-wrap thead th{position:sticky;top:0;z-index:1}
+.spk-list{max-height:360px;overflow-y:auto;scrollbar-gutter:stable}
+.ai-account-body>.detail{max-height:170px;overflow-y:auto;overflow-wrap:anywhere}
+@media(max-width:1279px){.connections-layout{grid-template-columns:minmax(0,1fr)}}
+@media(max-width:560px){#mcp-list{max-height:300px}.stat-table-wrap,.spk-list{max-height:320px}}
+/* Align labels with controls, rather than with controls plus helper copy. */
+#page-make .field{align-items:start}
+#page-make .field>label{min-height:44px;display:flex;align-items:center;margin:0;padding:0;line-height:1.6}
+#page-make .field>div{min-width:0}
+#document-type-hint{margin:8px 0 0;line-height:1.75}
+#page-make .field .chips{min-height:44px;align-items:center}
+@media(max-width:760px){#page-make .field>label{min-height:0;display:block;margin:0 0 2px}}

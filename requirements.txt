@@ -1,0 +1,17 @@
+# Installed into .venv (Python 3.11) by setup .bat. Keep this file ASCII: pip reads it as cp949 on Korean Windows.
+faster-whisper==1.2.1
+# av 19 removed the metadata_errors argument that faster-whisper 1.2.1 passes to av.open()
+av==18.1.0
+ctranslate2==4.8.3
+sherpa-onnx==1.13.8
+onnxruntime==1.31.0
+numpy==2.4.6
+pywebview==6.2.1
+reportlab==5.0.1
+python-hwpx==6.8.0
+python-docx==1.2.0
+pypdfium2==5.14.0
+pillow==12.3.0
+keyring==25.7.0
+edge-tts==7.3.1
+yt-dlp==2026.8.19

@@ -1,0 +1,13 @@
+gui_settings.json
+uploads/
+__pycache__/
+*.pyc
+.venv/
+stats.jsonl
+.claude/
+
+# Local data and secrets
+output/
+.env
+.env.*
+!.env.example
